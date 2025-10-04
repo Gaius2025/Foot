@@ -1,14 +1,10 @@
 // fetch_sofascore.js
-// Exécute Playwright (Chromium), ouvre un contexte "mobile-like", fait un fetch vers l'API Sofascore
-// et POSTe le JSON récupéré vers ton VPS (VPS_WEBHOOK).
-
-const { chromium } = require('playwright'); // installé par playwright
-const fetch = require('node-fetch');        // npm install node-fetch si besoin (ou utilise global fetch sur node18+)
+const { chromium } = require('playwright');
 
 (async () => {
   const SOFA_ENDPOINT = 'https://www.sofascore.com/api/v1/unique-tournament/7/season/76953/standings/total';
   const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
-  const COOKIE = process.env.SOFASCORE_COOKIE || ''; // optionnel
+  const COOKIE = process.env.SOFASCORE_COOKIE || '';
 
   if (!VPS_WEBHOOK) {
     console.error("Erreur: VPS_WEBHOOK non défini dans les secrets GitHub.");
@@ -34,31 +30,29 @@ const fetch = require('node-fetch');        // npm install node-fetch si besoin 
 
     const page = await context.newPage();
 
-    // IMPORTANT : on passe un objet à page.evaluate pour éviter l'erreur "Too many arguments"
-    const result = await page.evaluate(async ({ url, hdrs }) => {
+    const result = await page.evaluate(async (url, hdrs) => {
       try {
-        const resp = await fetch(url, {
-          method: 'GET',
-          headers: hdrs,
-          credentials: 'include'
-        });
+        const resp = await fetch(url, { method: 'GET', headers: hdrs, credentials: 'include' });
         const text = await resp.text();
         try { return { status: resp.status, body: JSON.parse(text) }; }
-        catch(e) { return { status: resp.status, bodyText: text }; }
+        catch { return { status: resp.status, bodyText: text }; }
       } catch (err) {
         return { error: String(err) };
       }
-    }, { url: SOFA_ENDPOINT, hdrs: headers });
+    }, SOFA_ENDPOINT, headers);
 
     console.log('Fetch result status:', result && result.status);
+
     if (result && result.body) {
       const postResp = await fetch(VPS_WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: 'sofascore', timestamp: Date.now(), payload: result.body })
       });
+
       console.log('POST to VPS status:', postResp.status);
       console.log('POST response:', await postResp.text());
+
       process.exit(postResp.ok ? 0 : 3);
     } else {
       console.error('Fetch did not return JSON. Result:', result);
