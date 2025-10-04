@@ -8,14 +8,13 @@ const fetch = require('node-fetch');        // npm install node-fetch si besoin 
 (async () => {
   const SOFA_ENDPOINT = 'https://www.sofascore.com/api/v1/unique-tournament/7/season/76953/standings/total';
   const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
-  const COOKIE = process.env.SOFASCORE_COOKIE || ''; // optionnel : "panoramaId=...; panoramaId_expiry=..." si tu veux
+  const COOKIE = process.env.SOFASCORE_COOKIE || ''; // optionnel
 
   if (!VPS_WEBHOOK) {
     console.error("Erreur: VPS_WEBHOOK non défini dans les secrets GitHub.");
     process.exit(2);
   }
 
-  // Headers inspirés de ceux que tu as fournis, pour ressembler à un vrai navigateur mobile
   const headers = {
     "accept": "*/*",
     "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -31,42 +30,36 @@ const fetch = require('node-fetch');        // npm install node-fetch si besoin 
     const context = await browser.newContext({
       userAgent: headers['user-agent'],
       locale: 'fr-FR',
-      // option: viewport/deviceScaleFactor si tu veux
     });
 
     const page = await context.newPage();
 
-    // Méthode : exécute fetch depuis la page (la requête sort comme venant d'un navigateur)
-    const result = await page.evaluate(async (url, hdrs) => {
+    // IMPORTANT : on passe un objet à page.evaluate pour éviter l'erreur "Too many arguments"
+    const result = await page.evaluate(async ({ url, hdrs }) => {
       try {
         const resp = await fetch(url, {
           method: 'GET',
           headers: hdrs,
           credentials: 'include'
         });
-        // Essayer parser JSON
         const text = await resp.text();
         try { return { status: resp.status, body: JSON.parse(text) }; }
         catch(e) { return { status: resp.status, bodyText: text }; }
       } catch (err) {
         return { error: String(err) };
       }
-    }, SOFA_ENDPOINT, headers);
+    }, { url: SOFA_ENDPOINT, hdrs: headers });
 
     console.log('Fetch result status:', result && result.status);
     if (result && result.body) {
-      // Envoie au VPS (POST JSON)
       const postResp = await fetch(VPS_WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: 'sofascore', timestamp: Date.now(), payload: result.body })
       });
-
       console.log('POST to VPS status:', postResp.status);
-      const postText = await postResp.text();
-      console.log('POST response:', postText);
-      if (postResp.ok) process.exit(0);
-      else process.exit(3);
+      console.log('POST response:', await postResp.text());
+      process.exit(postResp.ok ? 0 : 3);
     } else {
       console.error('Fetch did not return JSON. Result:', result);
       process.exit(4);
