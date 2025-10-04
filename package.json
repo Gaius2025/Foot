@@ -1,14 +1,17 @@
 {
-  "name": "sofascore-fetch",
+  "name": "fetch-sofascore",
   "version": "1.0.0",
-  "description": "Fetch Sofascore data via Playwright and send to VPS webhook",
+  "description": "Fetch Sofascore standings via Playwright",
   "main": "fetch_sofascore.js",
-  "type": "module",
   "scripts": {
     "start": "node fetch_sofascore.js"
   },
   "dependencies": {
-    "playwright": "^1.50.0",
-    "node-fetch": "^3.4.0"
+    "playwright": "^1.42.0",
+    "node-fetch": "^2.6.9"
+  },
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
   }
 }
