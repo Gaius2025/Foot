@@ -34,20 +34,25 @@ const { chromium } = require('playwright');
       try {
         const resp = await fetch(url, { method: 'GET', headers: hdrs, credentials: 'include' });
         const text = await resp.text();
-        try { return { status: resp.status, body: JSON.parse(text) }; }
-        catch { return { status: resp.status, bodyText: text }; }
+        try {
+          return { status: resp.status, body: JSON.parse(text) };
+        } catch {
+          return { status: resp.status, bodyText: text };
+        }
       } catch (err) {
         return { error: String(err) };
       }
     }, SOFA_ENDPOINT, headers);
 
-    console.log('Fetch result status:', result && result.status);
+    console.log('Fetch result:', result);
 
-    if (result && result.body) {
+    const payload = result.body || result.bodyText || result.error;
+
+    if (payload) {
       const postResp = await fetch(VPS_WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: 'sofascore', timestamp: Date.now(), payload: result.body })
+        body: JSON.stringify({ source: 'sofascore', timestamp: Date.now(), payload })
       });
 
       console.log('POST to VPS status:', postResp.status);
@@ -55,9 +60,10 @@ const { chromium } = require('playwright');
 
       process.exit(postResp.ok ? 0 : 3);
     } else {
-      console.error('Fetch did not return JSON. Result:', result);
+      console.error('Fetch did not return any data. Result:', result);
       process.exit(4);
     }
+
   } finally {
     await browser.close();
   }
