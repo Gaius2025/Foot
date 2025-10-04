@@ -1,9 +1,9 @@
 name: Fetch Sofascore standings (Playwright)
 
 on:
-  workflow_dispatch:       # permet de lancer à la main depuis GitHub
+  workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *" # optionnel : toutes les 6 heures
+    - cron: "0 */6 * * *"
 
 jobs:
   fetch:
