@@ -28,4 +28,3 @@ jobs:
           SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE || '' }}
         run: |
           node fetch_sofascore.js
-
