@@ -30,7 +30,8 @@ const { chromium } = require('playwright');
 
     const page = await context.newPage();
 
-    const result = await page.evaluate(async (url, hdrs) => {
+    // ✅ Correction ici: on passe un seul objet
+    const result = await page.evaluate(async ({ url, hdrs }) => {
       try {
         const resp = await fetch(url, { method: 'GET', headers: hdrs, credentials: 'include' });
         const text = await resp.text();
@@ -42,7 +43,7 @@ const { chromium } = require('playwright');
       } catch (err) {
         return { error: String(err) };
       }
-    }, SOFA_ENDPOINT, headers);
+    }, { url: SOFA_ENDPOINT, hdrs: headers });
 
     console.log('Fetch result:', result);
 
