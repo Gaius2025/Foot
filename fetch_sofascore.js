@@ -1,32 +1,17 @@
-name: Fetch Sofascore standings (Playwright)
-
-on:
-  workflow_dispatch:        # permet de lancer à la main depuis GitHub
-  schedule:
-    - cron: "0 */6 * * *"   # optionnel : toutes les 6 heures (modifie si tu veux)
-
-jobs:
-  fetch:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: |
-          npm ci || npm install
-          npx playwright install --with-deps
-
-      - name: Run fetch script
-        env:
-          VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
-          # Optionnel: si tu veux transmettre un cookie (panoramaId etc)
-          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE || '' }}
-        run: |
-          node fetch_sofascore.js
-
+{
+  "name": "fetch-sofascore",
+  "version": "1.0.0",
+  "description": "Fetch Sofascore standings via Playwright",
+  "main": "fetch_sofascore.js",
+  "scripts": {
+    "start": "node fetch_sofascore.js"
+  },
+  "dependencies": {
+    "playwright": "^1.42.0",
+    "node-fetch": "^2.6.9"
+  },
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  }
+}
