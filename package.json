@@ -1,16 +1,17 @@
-{
-  "name": "fetch-sofascore",
-  "version": "1.0.0",
-  "description": "Fetch Sofascore standings via Playwright",
-  "scripts": {
-    "start": "node fetch_sofascore.js"
-  },
-  "dependencies": {
-    "playwright": "^1.42.0",
-    "node-fetch": "^2.6.9"
-  },
-  "type": "commonjs",
-  "engines": {
-    "node": ">=18"
-  }
-}
+{    
+  "name": "fetch-sofascore",    
+  "version": "1.0.0",    
+  "description": "Fetch Sofascore standings via Playwright",    
+  "main": "fetch_sofascore.js",    
+  "scripts": {    
+    "start": "node fetch_sofascore.js"    
+  },    
+  "dependencies": {    
+    "playwright": "^1.42.0",    
+    "node-fetch": "^2.6.9"    
+  },    
+  "type": "commonjs",    
+  "engines": {    
+    "node": ">=18"    
+  }    
+}    
