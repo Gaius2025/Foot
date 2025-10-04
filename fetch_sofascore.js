@@ -30,7 +30,7 @@ const { chromium } = require('playwright');
 
     const page = await context.newPage();
 
-    // ✅ Correction ici: on passe un seul objet
+    // ✅ Correction clé : passer un seul objet à evaluate
     const result = await page.evaluate(async ({ url, hdrs }) => {
       try {
         const resp = await fetch(url, { method: 'GET', headers: hdrs, credentials: 'include' });
