@@ -2,7 +2,6 @@
   "name": "fetch-sofascore",
   "version": "1.0.0",
   "description": "Fetch Sofascore standings via Playwright",
-  "main": "fetch_sofascore.js",
   "scripts": {
     "start": "node fetch_sofascore.js"
   },
