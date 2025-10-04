@@ -1,0 +1,14 @@
+{
+  "name": "sofascore-fetch",
+  "version": "1.0.0",
+  "description": "Fetch Sofascore data via Playwright and send to VPS webhook",
+  "main": "fetch_sofascore.js",
+  "type": "module",
+  "scripts": {
+    "start": "node fetch_sofascore.js"
+  },
+  "dependencies": {
+    "playwright": "^1.50.0",
+    "node-fetch": "^3.4.0"
+  }
+}
