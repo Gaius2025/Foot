@@ -1,30 +1,28 @@
-name: Fetch Sofascore standings (Playwright)
+name: Fetch Sofascore
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: '0 * * * *' # toutes les heures
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install dependencies
-        run: |
-          npm install
-          npx playwright install --with-deps
+        run: npm ci
 
-      - name: Run fetch script
+      - name: Run fetch_sofascore.js
         env:
           VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
-          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE || '' }}
-        run: |
-          node fetch_sofascore.js
+          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
+        run: node fetch_sofascore.js
