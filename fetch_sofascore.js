@@ -6,8 +6,8 @@ const { chromium } = require('playwright');
 
 (async () => {
   const SOFA_ENDPOINT = 'https://www.sofascore.com/api/v1/unique-tournament/7/season/76953/standings/total';
-  const VPS_WEBHOOK = process.env.VPS_WEBHOOK;               // obligatoire (mettre en secrets GitHub)
-  const COOKIE = process.env.SOFASCORE_COOKIE || '';        // optionnel : "panoramaId=...; panoramaId_expiry=..."
+  const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
+  const COOKIE = process.env.SOFASCORE_COOKIE || '';
   const MAX_ATTEMPTS = 2;
 
   if (!VPS_WEBHOOK) {
@@ -56,8 +56,8 @@ const { chromium } = require('playwright');
           attemptDetails.push({ attempt, method: 'goto', status });
 
           if (status === 200 || status === 304) {
-            try { finalData = await response.json(); } 
-            catch { 
+            try { finalData = await response.json(); }   
+            catch {   
               const txt = await response.text();
               try { finalData = JSON.parse(txt); } catch { finalData = { text: txt }; }
             }
@@ -115,11 +115,11 @@ const { chromium } = require('playwright');
     // Filtrer uniquement le top 3
     // -------------------
     function filterTop3(rawData) {
-      const rows = rawData?.payload?.standings?.[0]?.rows || [];
+      const rows = rawData?.standings?.[0]?.rows || [];
       return rows.slice(0, 3).map(row => ({
         position: row.position,
-        team: row.team.name,
-        country: row.team.country.name,
+        team: row.team?.name || null,
+        country: row.team?.country?.name || null,
         matches: row.matches,
         wins: row.wins,
         draws: row.draws,
