@@ -22,11 +22,9 @@ const { chromium } = require('playwright');
     const context = await browser.newContext({
       userAgent: ua,
       locale: 'fr-FR',
-      // viewport mobile-like si besoin:
       viewport: { width: 360, height: 800 }
     });
 
-    // Si cookie fourni, ajoute au contexte (permet d'avoir panoramaId si nécessaire)
     if (COOKIE && COOKIE.trim()) {
       const cookiePairs = COOKIE.split(';').map(s => s.trim()).filter(Boolean);
       const cookies = cookiePairs.map(pair => {
@@ -40,66 +38,41 @@ const { chromium } = require('playwright');
           secure: true
         };
       });
-      if (cookies.length) {
-        await context.addCookies(cookies);
-        console.log('Cookies ajoutés au contexte:', cookies.map(c => c.name));
-      }
+      if (cookies.length) await context.addCookies(cookies);
     }
 
     const page = await context.newPage();
 
-    // Essayer directement loader l'URL de l'API (comme si on collait l'URL dans l'onglet navigateur)
-    // On fera jusqu'à MAX_ATTEMPTS tentatives en variant la méthode si nécessaire
     let finalData = null;
     let finalStatus = null;
     let attemptDetails = [];
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
-        console.log(`Tentative ${attempt} : navigation directe vers l'endpoint API...`);
         const response = await page.goto(SOFA_ENDPOINT, { waitUntil: 'networkidle', timeout: 20000 });
-
-        if (!response) {
-          attemptDetails.push({ attempt, method: 'goto', status: null, note: 'no response' });
-          console.warn('Aucune réponse (response null) pour goto.');
-        } else {
+        if (response) {
           const status = response.status();
           finalStatus = status;
           attemptDetails.push({ attempt, method: 'goto', status });
-          console.log(`Réponse goto HTTP status: ${status}`);
 
-          // Si 200 ou 304 on récupère le body
           if (status === 200 || status === 304) {
-            try {
-              finalData = await response.json();
-              console.log('Récupéré JSON via goto.');
-            } catch (e) {
-              // si body vide ou non-json -> fallback to text
+            try { finalData = await response.json(); } 
+            catch { 
               const txt = await response.text();
-              try { finalData = JSON.parse(txt); console.log('Parsed JSON from text'); }
-              catch { finalData = { text: txt }; console.log('Got text body'); }
+              try { finalData = JSON.parse(txt); } catch { finalData = { text: txt }; }
             }
-            break; // successful
+            break;
           }
-
-          // si 403, on va essayer méthode "fetch depuis la page" pour mieux simuler un vrai navigateur
-          if (status === 403) {
-            console.warn('403 reçu via goto; on va tenter une requête fetch depuis le contexte page (simulate browser fetch).');
-            // fallthrough to next attempt which will run the page-eval fetch block
-          }
+        } else {
+          attemptDetails.push({ attempt, method: 'goto', status: null, note: 'no response' });
         }
       } catch (err) {
         attemptDetails.push({ attempt, method: 'goto', status: null, error: String(err) });
-        console.warn('Erreur lors de goto:', String(err));
       }
 
-      // Si on arrive ici et que ce n'était pas concluant, essayer un fetch remplaçant (depuis la page)
       try {
-        console.log(`Tentative ${attempt} (fetch via page) : exécute fetch() dans le contexte navigateur...`);
-        // Passe un seul objet (Playwright limitation sur arguments)
         const result = await page.evaluate(async ({ url, ua, cookieString }) => {
           try {
-            // Construire headers similaires à un navigateur
             const headers = {
               'accept': '*/*',
               'accept-language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -121,9 +94,7 @@ const { chromium } = require('playwright');
               try { body = JSON.parse(text); } catch { body = { text }; }
             }
             return { status, ok: resp.ok, body };
-          } catch (err) {
-            return { error: String(err) };
-          }
+          } catch (err) { return { error: String(err) }; }
         }, { url: SOFA_ENDPOINT, ua, cookieString: COOKIE });
 
         attemptDetails.push({ attempt, method: 'page.fetch', result: (result && (result.status || result.error)) || 'no-result' });
@@ -131,38 +102,54 @@ const { chromium } = require('playwright');
         if (result && result.body) {
           finalData = result.body;
           finalStatus = result.status ?? finalStatus;
-          console.log('Récupération OK via page.fetch, status:', result.status);
           break;
-        } else {
-          console.warn('page.fetch n’a pas retourné de body ou erreur:', result && result.error);
         }
       } catch (err) {
         attemptDetails.push({ attempt, method: 'page.fetch', error: String(err) });
-        console.warn('Erreur lors de page.evaluate fetch:', String(err));
       }
 
-      // petite pause entre tentatives (optionnel)
       if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000));
-    } // end attempts loop
+    }
 
-    // Prépare payload final de debug + data
+    // -------------------
+    // Filtrer uniquement le top 3
+    // -------------------
+    function filterTop3(rawData) {
+      const rows = rawData?.payload?.standings?.[0]?.rows || [];
+      return rows.slice(0, 3).map(row => ({
+        position: row.position,
+        team: row.team.name,
+        country: row.team.country.name,
+        matches: row.matches,
+        wins: row.wins,
+        draws: row.draws,
+        losses: row.losses,
+        scoresFor: row.scoresFor,
+        scoresAgainst: row.scoresAgainst,
+        points: row.points,
+        scoreDiff: row.scoreDiffFormatted
+      }));
+    }
+
+    const top3 = finalData ? filterTop3(finalData) : [];
+
+    // Prépare payload final
     const payloadToSend = {
       source: 'sofascore',
       timestamp: Date.now(),
       endpoint: SOFA_ENDPOINT,
       attempts: attemptDetails,
       status: finalStatus,
-      payload: finalData ?? null
+      payload: top3
     };
 
     // Envoi au VPS
     const posted = await sendToVPS(VPS_WEBHOOK, payloadToSend);
     if (posted && posted.ok) {
-      console.log('✅ Données envoyées au VPS avec succès. status POST:', posted.status);
+      console.log('✅ Top 3 envoyé au VPS avec succès:', top3);
       process.exit(0);
     } else {
       console.error('⛔ Erreur lors du POST vers VPS:', posted);
-      // Si on a récupéré des données mais POST échoue, quitte avec code 3
       process.exit(3);
     }
 
@@ -173,7 +160,6 @@ const { chromium } = require('playwright');
     await browser.close();
   }
 
-  // helper pour poster vers le webhook (utilise global fetch de node18+)
   async function sendToVPS(url, body) {
     try {
       const resp = await fetch(url, {
