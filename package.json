@@ -7,8 +7,7 @@
     "start": "node fetch_sofascore.js"
   },
   "dependencies": {
-    "playwright": "^1.42.0",
-    "node-fetch": "^2.6.9"
+    "playwright": "^1.55.0"
   },
   "type": "commonjs",
   "engines": {
