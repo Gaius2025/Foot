@@ -1,5 +1,6 @@
-// fetch_sofascore.js
-// Playwright script -> ouvre directement l'API interne Sofascore et poste le JSON au webhook VPS
+// fetch_sofascore_debug.js
+// Playwright script -> récupère l'API interne Sofascore et poste le JSON au webhook VPS
+// Avec logs complets pour debug
 // Usage via GitHub Actions (node 18+, playwright installé)
 
 const { chromium } = require('playwright');
@@ -19,24 +20,13 @@ const { chromium } = require('playwright');
 
   const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   try {
-    const context = await browser.newContext({
-      userAgent: ua,
-      locale: 'fr-FR',
-      viewport: { width: 360, height: 800 }
-    });
+    const context = await browser.newContext({ userAgent: ua, locale: 'fr-FR', viewport: { width: 360, height: 800 } });
 
-    if (COOKIE && COOKIE.trim()) {
+    if (COOKIE.trim()) {
       const cookiePairs = COOKIE.split(';').map(s => s.trim()).filter(Boolean);
       const cookies = cookiePairs.map(pair => {
         const [name, ...rest] = pair.split('=');
-        return {
-          name: name.trim(),
-          value: rest.join('='),
-          domain: 'www.sofascore.com',
-          path: '/',
-          httpOnly: false,
-          secure: true
-        };
+        return { name: name.trim(), value: rest.join('='), domain: 'www.sofascore.com', path: '/', httpOnly: false, secure: true };
       });
       if (cookies.length) await context.addCookies(cookies);
     }
@@ -56,10 +46,10 @@ const { chromium } = require('playwright');
           attemptDetails.push({ attempt, method: 'goto', status });
 
           if (status === 200 || status === 304) {
-            try { finalData = await response.json(); }   
-            catch {   
-              const txt = await response.text();
-              try { finalData = JSON.parse(txt); } catch { finalData = { text: txt }; }
+            try { finalData = await response.json(); } 
+            catch { 
+              const txt = await response.text(); 
+              try { finalData = JSON.parse(txt); } catch { finalData = { text: txt }; } 
             }
             break;
           }
@@ -81,18 +71,14 @@ const { chromium } = require('playwright');
               'user-agent': ua,
               'x-requested-with': '335131'
             };
-            if (cookieString && cookieString.length) headers['cookie'] = cookieString;
+            if (cookieString) headers['cookie'] = cookieString;
 
             const resp = await fetch(url, { method: 'GET', headers, credentials: 'include' });
             const status = resp.status;
             const ct = resp.headers.get('content-type') || '';
             let body = null;
-            if (ct.includes('application/json') || ct.includes('text/json')) {
-              body = await resp.json();
-            } else {
-              const text = await resp.text();
-              try { body = JSON.parse(text); } catch { body = { text }; }
-            }
+            if (ct.includes('application/json') || ct.includes('text/json')) body = await resp.json();
+            else { const text = await resp.text(); try { body = JSON.parse(text); } catch { body = { text }; } }
             return { status, ok: resp.ok, body };
           } catch (err) { return { error: String(err) }; }
         }, { url: SOFA_ENDPOINT, ua, cookieString: COOKIE });
@@ -111,9 +97,6 @@ const { chromium } = require('playwright');
       if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000));
     }
 
-    // -------------------
-    // Filtrer uniquement le top 3
-    // -------------------
     function filterTop3(rawData) {
       const rows = rawData?.standings?.[0]?.rows || [];
       return rows.slice(0, 3).map(row => ({
@@ -133,26 +116,15 @@ const { chromium } = require('playwright');
 
     const top3 = finalData ? filterTop3(finalData) : [];
 
-    // Prépare payload final
-    const payloadToSend = {
-      source: 'sofascore',
-      timestamp: Date.now(),
-      endpoint: SOFA_ENDPOINT,
-      attempts: attemptDetails,
-      status: finalStatus,
-      payload: top3
-    };
+    const payloadToSend = { source: 'sofascore', timestamp: Date.now(), endpoint: SOFA_ENDPOINT, attempts: attemptDetails, status: finalStatus, payload: top3 };
 
-    // Envoi au VPS
+    // Debug complet: log JSON final
+    console.log('📡 JSON envoyé au VPS:\n', JSON.stringify(payloadToSend, null, 2));
+
     const posted = await sendToVPS(VPS_WEBHOOK, payloadToSend);
-    if (posted && posted.ok) {
-      // Log JSON complet pour debug
-      console.log(JSON.stringify(payloadToSend));
-      process.exit(0);
-    } else {
-      console.error('⛔ Erreur lors du POST vers VPS:', posted);
-      process.exit(3);
-    }
+    if (!posted.ok) console.error('⛔ Erreur lors du POST vers VPS:', posted);
+
+    process.exit(0);
 
   } catch (err) {
     console.error('Erreur inattendue :', err);
@@ -163,11 +135,7 @@ const { chromium } = require('playwright');
 
   async function sendToVPS(url, body) {
     try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const text = await resp.text().catch(() => '');
       return { ok: resp.ok, status: resp.status, text };
     } catch (err) {
@@ -175,4 +143,4 @@ const { chromium } = require('playwright');
     }
   }
 
-})();
+})();m
