@@ -146,7 +146,8 @@ const { chromium } = require('playwright');
     // Envoi au VPS
     const posted = await sendToVPS(VPS_WEBHOOK, payloadToSend);
     if (posted && posted.ok) {
-      console.log('✅ Top 3 envoyé au VPS avec succès:', top3);
+      // Log JSON complet pour debug
+      console.log(JSON.stringify(payloadToSend));
       process.exit(0);
     } else {
       console.error('⛔ Erreur lors du POST vers VPS:', posted);
