@@ -1,4 +1,4 @@
-name: Fetch Sofascore Championnats
+name: Fetch Sofascore Championnats (Playwright)
 
 on:
   workflow_dispatch:
@@ -22,8 +22,9 @@ jobs:
           npm install
           npx playwright install --with-deps
 
-      - name: Run fetch_championnats.js
+      - name: Run fetch script
         env:
+          VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
           SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE || '' }}
         run: |
-          node scripts/fetch_championnats.js
+          node scripts/fetch_championnats_vps.js
