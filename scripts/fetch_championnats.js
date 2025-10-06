@@ -118,8 +118,8 @@ const GROUPS = {
     }
 
     let allData = await response.json();
-    // Flatten les championnats disponibles
     const tournaments = [];
+
     function extractTournaments(cat) {
       if (cat.uniqueTournaments) {
         cat.uniqueTournaments.forEach(t => tournaments.push({ id: t.id, name: t.name, slug: t.slug, country: cat.name }));
@@ -127,15 +127,17 @@ const GROUPS = {
       if (cat.categories) cat.categories.forEach(sub => extractTournaments(sub));
     }
 
-    // ✅ Correction : itérer sur allData.categories au lieu de allData
+    // ✅ Correction : parcourir allData.categories
     if (allData.categories && Array.isArray(allData.categories)) {
       allData.categories.forEach(c => extractTournaments(c));
     }
 
-    // Pour chaque groupe, filtrer et écrire la table
+    // Filtrage plus permissif avec includes (ignore accents et différences mineures)
     for (let groupNum = 1; groupNum <= 9; groupNum++) {
       const groupNames = GROUPS[groupNum];
-      const filtered = tournaments.filter(t => groupNames.includes(t.name));
+      const filtered = tournaments.filter(t =>
+        groupNames.some(name => t.name.toLowerCase().includes(name.toLowerCase()))
+      );
       const tablePath = path.join(__dirname, '../tables/table' + groupNum + '.js');
       const fileContent = 'module.exports = ' + JSON.stringify(filtered, null, 2) + ';';
       fs.writeFileSync(tablePath, fileContent);
