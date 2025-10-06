@@ -1,4 +1,3 @@
-
 // scripts/fetch_championnats.js
 // Playwright script -> récupère les championnats Sofascore et crée les tables par groupe
 // Usage : node fetch_championnats.js
@@ -127,7 +126,11 @@ const GROUPS = {
       }
       if (cat.categories) cat.categories.forEach(sub => extractTournaments(sub));
     }
-    allData.forEach(c => extractTournaments(c));
+
+    // ✅ Correction : itérer sur allData.categories au lieu de allData
+    if (allData.categories && Array.isArray(allData.categories)) {
+      allData.categories.forEach(c => extractTournaments(c));
+    }
 
     // Pour chaque groupe, filtrer et écrire la table
     for (let groupNum = 1; groupNum <= 9; groupNum++) {
