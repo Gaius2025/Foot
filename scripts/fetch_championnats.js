@@ -1,41 +1,30 @@
 // scripts/fetch_championnats_names.js
 // Récupère tous les noms de championnats Sofascore et les sauvegarde dans tables/memo_noms.js
+// Utilisation : node scripts/fetch_championnats_names.js
 
-const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const fetch = require('node-fetch'); // npm i node-fetch
 
 (async () => {
   const SOFA_CATEGORIES = 'https://www.sofascore.com/api/v1/sport/football/categories/all';
   const COOKIE = process.env.SOFASCORE_COOKIE || '';
-  const ua = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36";
 
-  const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   try {
-    const context = await browser.newContext({ userAgent: ua, viewport: { width: 360, height: 800 } });
-    if (COOKIE.trim()) {
-      const cookies = COOKIE.split(';').map(s => s.trim()).filter(Boolean).map(pair => {
-        const [name, ...rest] = pair.split('=');
-        return { name: name.trim(), value: rest.join('='), domain: 'www.sofascore.com', path: '/', httpOnly: false, secure: true };
-      });
-      if (cookies.length) await context.addCookies(cookies);
-    }
+    const headers = {
+      'accept': '*/*',
+      'accept-language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+      'cache-control': 'max-age=0',
+      'referer': 'https://www.sofascore.com/',
+      'user-agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36',
+      'x-requested-with': '335131'
+    };
+    if (COOKIE.trim()) headers['cookie'] = COOKIE;
 
-    const page = await context.newPage();
-    const result = await page.evaluate(async ({ url, ua, cookieString }) => {
-      const headers = {
-        'accept': '*/*',
-        'accept-language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-        'cache-control': 'max-age=0',
-        'referer': 'https://www.sofascore.com/',
-        'user-agent': ua,
-        'x-requested-with': '335131'
-      };
-      if (cookieString) headers['cookie'] = cookieString;
+    const resp = await fetch(SOFA_CATEGORIES, { method: 'GET', headers });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      const resp = await fetch(url, { method: 'GET', headers, credentials: 'include' });
-      return await resp.json();
-    }, { url: SOFA_CATEGORIES, ua, cookieString: COOKIE });
+    const result = await resp.json();
 
     // Extraire tous les noms récursivement
     const names = [];
@@ -53,7 +42,5 @@ const path = require('path');
   } catch (err) {
     console.error('Erreur inattendue :', err);
     process.exit(1);
-  } finally {
-    await browser.close();
   }
 })();
