@@ -1,9 +1,9 @@
-name: Test Fetch Championnats
+name: Fetch Sofascore Championnats
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *"  # toutes les 6 heures, modifie si besoin
+    - cron: "0 */6 * * *"  # toutes les 6 heures
 
 jobs:
   fetch:
@@ -22,9 +22,8 @@ jobs:
           npm install
           npx playwright install --with-deps
 
-      - name: Run fetch script
+      - name: Run fetch_championnats.js
         env:
           SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE || '' }}
         run: |
           node scripts/fetch_championnats.js
-
