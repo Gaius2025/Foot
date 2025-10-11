@@ -1,0 +1,23 @@
+
+{
+  "Germany": {
+    "leagues": [
+      {
+        "name": "2. Bundesliga",
+        "id": 44
+      },
+      {
+        "name": "3. Liga",
+        "id": 491
+      },
+      {
+        "name": "Frauen-Bundesliga",
+        "id": 232
+      },
+      {
+        "name": "2. Frauen-Bundesliga",
+        "id": 2288
+      }
+    ]
+  }
+}
