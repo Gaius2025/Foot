@@ -1,0 +1,118 @@
+{
+  "Czech Republic": {
+    "leagues": [
+      {
+        "name": "Czech First League",
+        "id": 172
+      },
+      {
+        "name": "FNL",
+        "id": 205
+      },
+      {
+        "name": "CFL",
+        "id": 9387
+      },
+      {
+        "name": "MSFL",
+        "id": 9386
+      },
+      {
+        "name": "Divize A",
+        "id": 20945
+      },
+      {
+        "name": "Divize B",
+        "id": 20946
+      },
+      {
+        "name": "Divize C",
+        "id": 20947
+      },
+      {
+        "name": "Divize D",
+        "id": 20948
+      },
+      {
+        "name": "Divize E",
+        "id": 20950
+      },
+      {
+        "name": "Divize F",
+        "id": 20949
+      }
+    ]
+  },
+  "Norway": {
+    "leagues": [
+      {
+        "name": "Eliteserien",
+        "id": 20
+      },
+      {
+        "name": "Norwegian 1st Division",
+        "id": 22
+      },
+      {
+        "name": "2nd Division, Group 1",
+        "id": 11085
+      },
+      {
+        "name": "2nd Division, Group 2",
+        "id": 11090
+      },
+      {
+        "name": "3rd Division, Group 1",
+        "id": 11084
+      },
+      {
+        "name": "3rd Division, Group 2",
+        "id": 11086
+      },
+      {
+        "name": "3rd Division, Group 3",
+        "id": 11083
+      },
+      {
+        "name": "3rd Division, Group 4",
+        "id": 11087
+      },
+      {
+        "name": "3rd Division, Group 5",
+        "id": 11088
+      },
+      {
+        "name": "3rd Division, Group 6",
+        "id": 11082
+      }
+    ]
+  },
+  "Mexico": {
+    "leagues": [
+      {
+        "name": "Liga MX, Apertura",
+        "id": 11621
+      },
+      {
+        "name": "Liga MX, Clausura",
+        "id": 11620
+      },
+      {
+        "name": "Liga de Expansión MX, Apertura",
+        "id": 11611
+      },
+      {
+        "name": "Liga de Expansión MX, Clausura",
+        "id": 11612
+      },
+      {
+        "name": "Liga Premier Serie A",
+        "id": 20870
+      },
+      {
+        "name": "Liga Premier Serie B",
+        "id": 20871
+      }
+    ]
+  }
+}
