@@ -1,1 +1,31 @@
+name: Fetch Group 1 Top 3 Analysis
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *" # toutes les 6 heures, modifiable
+
+jobs:
+  fetch_group1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install --with-deps
+
+      - name: Run Group 1 Analysis Script
+        env:
+          VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
+          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE || '' }}
+        run: |
+          node scripts/fetch_group1.js
 
