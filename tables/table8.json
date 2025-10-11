@@ -1,0 +1,111 @@
+{
+  "Romania": {
+    "leagues": [
+      {
+        "name": "Romanian Super Liga",
+        "id": 152
+      },
+      {
+        "name": "Liga II",
+        "id": 562
+      },
+      {
+        "name": "Liga III Baraj Promovare",
+        "id": 18846
+      },
+      {
+        "name": "Liga III Seria 1",
+        "id": 16797
+      },
+      {
+        "name": "Liga III Seria 2",
+        "id": 16804
+      },
+      {
+        "name": "Liga III Seria 3",
+        "id": 16826
+      },
+      {
+        "name": "Liga III Seria 4",
+        "id": 16779
+      },
+      {
+        "name": "Liga III Seria 5",
+        "id": 16787
+      },
+      {
+        "name": "Liga III Seria 6",
+        "id": 16809
+      },
+      {
+        "name": "Liga III Seria 7",
+        "id": 16892
+      },
+      {
+        "name": "Liga III Seria 8",
+        "id": 16796
+      },
+      {
+        "name": "Liga III Seria 9",
+        "id": 16816
+      },
+      {
+        "name": "Liga III Seria 10",
+        "id": 16822
+      },
+      {
+        "name": "SuperLiga Feminină",
+        "id": 23334
+      },
+      {
+        "name": "Liga 2 Feminin",
+        "id": 23349
+      },
+      {
+        "name": "Liga 3 Feminin",
+        "id": 24101
+      }
+    ]
+  },
+  "Tunisia": {
+    "leagues": [
+      {
+        "name": "Tunisian Ligue Professionnelle 1",
+        "id": 984
+      },
+      {
+        "name": "Tunisian Ligue Professionnelle 2",
+        "id": 10633
+      }
+    ]
+  },
+  "England": {
+    "leagues": [
+      {
+        "name": "Championship",
+        "id": 18
+      },
+      {
+        "name": "League One",
+        "id": 24
+      },
+      {
+        "name": "League Two",
+        "id": 25
+      },
+      {
+        "name": "National League",
+        "id": 173
+      },
+      {
+        "name": "Women's Super League",
+        "id": 1044
+      },
+      {
+        "name": "FA Women's Championship",
+        "id": 10553
+      }
+    ]
+  }
+}
+
