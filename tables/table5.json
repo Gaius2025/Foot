@@ -1,0 +1,114 @@
+{
+  "Colombia": {
+    "leagues": [
+      {
+        "name": "Primera A, Apertura",
+        "id": 11539
+      },
+      {
+        "name": "Primera A, Finalización",
+        "id": 11536
+      },
+      {
+        "name": "Categoría Primera B",
+        "id": 1238
+      },
+      {
+        "name": "Primera C",
+        "id": 26947
+      }
+    ]
+  },
+  "Greece": {
+    "leagues": [
+      {
+        "name": "Stoiximan Super League",
+        "id": 185
+      },
+      {
+        "name": "Super League 2",
+        "id": 186
+      },
+      {
+        "name": "Gamma Ethniki",
+        "id": 20862
+      }
+    ]
+  },
+  "Belgium": {
+    "leagues": [
+      {
+        "name": "Pro League",
+        "id": 38
+      },
+      {
+        "name": "Challenger Pro League",
+        "id": 9
+      }
+    ]
+  },
+  "Austria": {
+    "leagues": [
+      {
+        "name": "Austrian Bundesliga",
+        "id": 45
+      },
+      {
+        "name": "2. Liga",
+        "id": 135
+      }
+    ]
+  },
+  "Turkey": {
+    "leagues": [
+      {
+        "name": "Trendyol Süper Lig",
+        "id": 52
+      },
+      {
+        "name": "Trendyol 1. Lig",
+        "id": 98
+      },
+      {
+        "name": "Nesine 2. Lig",
+        "id": 97
+      },
+      {
+        "name": "Nesine 3. Lig, Grup 1",
+        "id": 11417
+      },
+      {
+        "name": "Nesine 3. Lig, Grup 2",
+        "id": 11416
+      },
+      {
+        "name": "Nesine 3. Lig, Grup 3",
+        "id": 11415
+      },
+      {
+        "name": "Nesine 3. Lig, Grup 4",
+        "id": 15938
+      }
+    ]
+  },
+  "Portugal": {
+    "leagues": [
+      {
+        "name": "Liga Portugal Betclic",
+        "id": 238
+      },
+      {
+        "name": "Liga Portugal 2",
+        "id": 239
+      },
+      {
+        "name": "Liga 3",
+        "id": 17101
+      },
+      {
+        "name": "Campeonato de Portugal",
+        "id": 10093
+      }
+    ]
+  }
+}
