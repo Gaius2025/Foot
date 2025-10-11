@@ -1,0 +1,186 @@
+{
+  "Netherlands": {
+    "leagues": [
+      {
+        "name": "VriendenLoterij Eredivisie",
+        "id": 37
+      },
+      {
+        "name": "Eerste Divisie",
+        "id": 131
+      },
+      {
+        "name": "Tweede Divisie",
+        "id": 11402
+      }
+    ]
+  },
+  "France": {
+    "leagues": [
+      {
+        "name": "Ligue 1",
+        "id": 34
+      },
+      {
+        "name": "Ligue 2",
+        "id": 182
+      },
+      {
+        "name": "National 1",
+        "id": 183
+      },
+      {
+        "name": "National 2",
+        "id": 28153
+      }
+    ]
+  },
+  "Russia": {
+    "leagues": [
+      {
+        "name": "Russian Premier League",
+        "id": 203
+      },
+      {
+        "name": "First League",
+        "id": 204
+      },
+      {
+        "name": "Second League, Division A",
+        "id": 20706
+      },
+      {
+        "name": "Second League, Division B, Group 1",
+        "id": 1093
+      },
+      {
+        "name": "Second League, Division B, Group 2",
+        "id": 1099
+      },
+      {
+        "name": "Second League, Division B, Group 3",
+        "id": 1095
+      },
+      {
+        "name": "Second League, Division B, Group 4",
+        "id": 1097
+      },
+      {
+        "name": "M-League, Division A",
+        "id": 879
+      }
+    ]
+  },
+  "Italy": {
+    "leagues": [
+      {
+        "name": "Serie B",
+        "id": 53
+      },
+      {
+        "name": "Serie C, Girone A",
+        "id": 11445
+      },
+      {
+        "name": "Serie C, Girone B",
+        "id": 11447
+      },
+      {
+        "name": "Serie C, Girone C",
+        "id": 11446
+      },
+      {
+        "name": "Serie C, Playoffs",
+        "id": 11452
+      },
+      {
+        "name": "Serie C, Play-out",
+        "id": 13579
+      },
+      {
+        "name": "Coppa Italia Serie C",
+        "id": 824
+      },
+      {
+        "name": "Supercoppa Serie C",
+        "id": 884
+      },
+      {
+        "name": "Serie D, Girone A",
+        "id": 1374
+      },
+      {
+        "name": "Serie D, Girone B",
+        "id": 1376
+      },
+      {
+        "name": "Serie D, Girone C",
+        "id": 1378
+      },
+      {
+        "name": "Serie D, Girone D",
+        "id": 1380
+      },
+      {
+        "name": "Serie D, Girone E",
+        "id": 1382
+      },
+      {
+        "name": "Serie D, Girone F",
+        "id": 1384
+      },
+      {
+        "name": "Serie D, Girone G",
+        "id": 1386
+      },
+      {
+        "name": "Serie D, Girone H",
+        "id": 1388
+      },
+      {
+        "name": "Serie D, Girone I",
+        "id": 1390
+      },
+      {
+        "name": "Serie D, Poule Scudetto",
+        "id": 1710
+      }
+    ]
+  },
+  "Spain": {
+    "leagues": [
+      {
+        "name": "LaLiga 2",
+        "id": 54
+      },
+      {
+        "name": "Primera Federación",
+        "id": 17073
+      },
+      {
+        "name": "Segunda Federación",
+        "id": 544
+      },
+      {
+        "name": "Liga F Moeve",
+        "id": 1127
+      },
+      {
+        "name": "División de Honor Juvenil",
+        "id": 23232
+      },
+      {
+        "name": "Primera Federacion Women",
+        "id": 27917
+      },
+      {
+        "name": "Segunda Federacion Femenina",
+        "id": 23600
+      },
+      {
+        "name": "División de Honor Juvenil (U19)",
+        "id": 28749
+      }
+    ]
+  }
+}
