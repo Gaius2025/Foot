@@ -1,7 +1,6 @@
 // fetch_championnats_vps.js
-// Playwright script -> récupère les championnats Sofascore et poste le JSON au VPS
-// Avec logs complets pour debug
-// Usage via GitHub Actions (node 18+, playwright installé)
+// Script Playwright -> récupère les championnats Sofascore et poste le JSON au VPS
+// Compatible GitHub Actions (Node 18+, Playwright installé)
 
 const { chromium } = require('playwright');
 
@@ -23,13 +22,20 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   try {
     const context = await browser.newContext({ userAgent: ua });
-    
+
     // Ajouter les cookies si nécessaire
     if (COOKIE.trim()) {
       const cookiePairs = COOKIE.split(';').map(s => s.trim()).filter(Boolean);
       const cookies = cookiePairs.map(pair => {
         const [name, ...rest] = pair.split('=');
-        return { name: name.trim(), value: rest.join('='), domain: 'www.sofascore.com', path: '/', httpOnly: false, secure: true };
+        return {
+          name: name.trim(),
+          value: rest.join('='),
+          domain: 'www.sofascore.com',
+          path: '/',
+          httpOnly: false,
+          secure: true
+        };
       });
       if (cookies.length) await context.addCookies(cookies);
     }
@@ -39,7 +45,7 @@ const { chromium } = require('playwright');
     let finalStatus = null;
     let attemptDetails = [];
 
-    console.log("🌐 Navigation vers l’API...");
+    console.log("🌐 Navigation vers l’API Sofascore...");
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
@@ -50,10 +56,12 @@ const { chromium } = require('playwright');
           attemptDetails.push({ attempt, method: 'goto', status });
 
           if (status === 200 || status === 304) {
-            try { finalData = await response.json(); } 
-            catch { 
+            try { 
+              finalData = await response.json(); 
+            } catch { 
               const txt = await response.text();
-              try { finalData = JSON.parse(txt); } catch { finalData = { text: txt }; }
+              try { finalData = JSON.parse(txt); } 
+              catch { finalData = { raw: txt }; }
             }
             break;
           }
@@ -61,7 +69,11 @@ const { chromium } = require('playwright');
       } catch (err) {
         attemptDetails.push({ attempt, method: 'goto', error: String(err) });
       }
-      if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000));
+
+      if (attempt < MAX_ATTEMPTS) {
+        console.log(`🔁 Nouvelle tentative (${attempt + 1}/${MAX_ATTEMPTS})...`);
+        await new Promise(r => setTimeout(r, 1000));
+      }
     }
 
     if (!finalData) {
@@ -69,38 +81,42 @@ const { chromium } = require('playwright');
       process.exit(3);
     }
 
-    console.log(`📡 Données reçues (${JSON.stringify(finalData).length} caractères)`);
+    console.log(`📦 Données récupérées : ${JSON.stringify(finalData).length} caractères.`);
 
-    // Préparer le payload pour le VPS
+    // ✅ Payload à envoyer (pas de nom de fichier)
     const payloadToSend = {
       source: 'sofascore_championnats',
       timestamp: Date.now(),
       endpoint: SOFA_ENDPOINT,
       attempts: attemptDetails,
       status: finalStatus,
-      payload: finalData,
-      filename: `championnats_${Date.now()}.json`  // Nom unique du fichier sur le VPS
+      payload: finalData
     };
 
-    console.log("💾 Envoi au VPS...");
+    console.log("📡 Envoi des données au VPS...");
     const posted = await sendToVPS(VPS_WEBHOOK, payloadToSend);
-    if (posted.ok) console.log("✅ JSON envoyé avec succès au VPS !");
-    else console.error("⛔ Erreur lors du POST vers VPS:", posted);
+    if (posted.ok) {
+      console.log("✅ Données envoyées avec succès au VPS !");
+      console.log("💾 Le fichier sera enregistré sous : categori_all.json");
+    } else {
+      console.error("⛔ Erreur lors du POST vers VPS:", posted);
+    }
 
   } catch (err) {
-    console.error('Erreur inattendue :', err);
+    console.error('⚠️ Erreur inattendue :', err);
     process.exit(5);
   } finally {
     await browser.close();
-    console.log("🏁 Fin du script.");
+    console.log("🏁 Fin du script Sofascore.");
   }
 
+  // Fonction d’envoi au VPS
   async function sendToVPS(url, body) {
     try {
       const resp = await fetch(url, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify(body) 
+        body: JSON.stringify(body)
       });
       const text = await resp.text().catch(() => '');
       return { ok: resp.ok, status: resp.status, text };
