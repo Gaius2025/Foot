@@ -1,0 +1,134 @@
+{
+  "Peru": {
+    "leagues": [
+      {
+        "name": "Liga 1",
+        "id": 406
+      },
+      {
+        "name": "Liga 2",
+        "id": 10297
+      },
+      {
+        "name": "Liga 3",
+        "id": 29030
+      },
+      {
+        "name": "Peru Primera División Femenina",
+        "id": 18718
+      }
+    ]
+  },
+  "Wales": {
+    "leagues": [
+      {
+        "name": "Cymru Premier",
+        "id": 254
+      },
+      {
+        "name": "Cymru North",
+        "id": 13820
+      },
+      {
+        "name": "Cymru South",
+        "id": 13821
+      },
+      {
+        "name": "Wales Premier League Women",
+        "id": 23231
+      }
+    ]
+  },
+  "El Salvador": {
+    "leagues": [
+      {
+        "name": "Primera División, Apertura",
+        "id": 11537
+      },
+      {
+        "name": "Primera División, Clausura",
+        "id": 11532
+      },
+      {
+        "name": "Segunda División",
+        "id": 19969
+      }
+    ]
+  },
+  "Iran": {
+    "leagues": [
+      {
+        "name": "Persian Gulf Pro League",
+        "id": 915
+      },
+      {
+        "name": "Azadegan League",
+        "id": 11338
+      },
+      {
+        "name": "Hazfi Cup",
+        "id": 11497
+      },
+      {
+        "name": "Iranian Super Cup",
+        "id": 18526
+      }
+    ]
+  },
+  "Indonesia": {
+    "leagues": [
+      {
+        "name": "Indonesia Super League",
+        "id": 1015
+      },
+      {
+        "name": "Indonesia Championship",
+        "id": 23229
+      },
+      {
+        "name": "Indonesia Liga 3",
+        "id": 24432
+      }
+    ]
+  },
+  "Faroe Islands": {
+    "leagues": [
+      {
+        "name": "Faroe Islands Premier League",
+        "id": 673
+      },
+      {
+        "name": "Faroe Islands 1. Deild",
+        "id": 674
+      },
+      {
+        "name": "Faroe Islands 2. Deild",
+        "id": 24914
+      }
+    ]
+  },
+  "Kenya": {
+    "leagues": [
+      {
+        "name": "Kenyan Premier League",
+        "id": 1644
+      },
+      {
+        "name": "National Super League",
+        "id": 16540
+      },
+      {
+        "name": "Division One League - Zone A",
+        "id": 16778
+      },
+      {
+        "name": "Division One League - Zone B",
+        "id": 16808
+      },
+      {
+        "name": "Division Two League",
+        "id": 20220
+      }
+    ]
+  }
+}
