@@ -30,6 +30,7 @@ function tomorrowISO() {
 
 (async () => {
   console.log('🚀 Démarrage du script Group 1...');
+
   // Charger table1.json
   let table;
   try {
@@ -86,7 +87,6 @@ function tomorrowISO() {
           const j = await resp.json();
           return j;
         } catch (errJson) {
-          // fallback: text -> parse
           const txt = await resp.text();
           try {
             return JSON.parse(txt);
@@ -136,84 +136,49 @@ function tomorrowISO() {
       }
       console.log(`   ↳ ${scheduled.events.length} événement(s) reçu(s) pour ${leagueName}.`);
 
-      // try to get season id from the first event that has season
-      const seasonId = (scheduled.events.find(e => e.season && e.season.id && e.season.id > 0)?.season?.id) || null;
+      // récupérer seasonId et roundId
+      const firstEvent = scheduled.events[0] || {};
+      const seasonId = firstEvent.season?.id || null;
+      const roundId = firstEvent.roundInfo?.round || null;
+
       if (!seasonId) {
-        console.warn('   ⚠️ season.id introuvable dans scheduled-events. Tentative de récupération via unique-tournaments...');
-        // fallback: call category unique-tournaments (category.id is in event.tournament.category.id)
-        const catId = scheduled.events[0]?.tournament?.category?.id || null;
-        if (catId) {
-          const catUrl = `https://www.sofascore.com/api/v1/category/${catId}/unique-tournaments`;
-          console.log(`   ↳ Récupération unique-tournaments via: ${catUrl}`);
-          const catData = await fetchJson(catUrl, `category-${catId}`);
-          // best-effort: find the uniqueTournament with id === leagueId and maybe recent seasons (we cannot list seasons here)
-          // many uniqueTournaments have "id" field (uniqueTournament.id); but standings require season id; we'll just try to skip if unknown
-          if (!catData) {
-            console.warn('   ⚠️ Impossible d\'obtenir unique-tournaments. On pourra essayer standings "current" mais risque d\'échec.');
-          } else {
-            console.log('   ↳ unique-tournaments récupéré (non utilisé automatiquement pour season.id).');
-          }
-        } else {
-          console.warn('   ⚠️ Pas de category.id disponible non plus.');
-        }
+        console.warn('   ⚠️ season.id introuvable.');
       } else {
-        console.log(`   ↳ season.id trouvé : ${seasonId}`);
+        console.log(`   ↳ season.id : ${seasonId}`);
       }
 
-      // Step: retrieve standings (requires seasonId). If seasonId missing, try to attempt standings with "current" (best-effort).
-      if (!seasonId) {
-        console.warn('   ⚠️ Pas de seasonId fiable -> on tente standings avec "current" (peut échouer).');
+      if (!roundId) {
+        console.warn('   ⚠️ round.id introuvable.');
+      } else {
+        console.log(`   ↳ round.id : ${roundId}`);
       }
 
+      // Etape 2: récupérer top 3
       const standingsSeasonId = seasonId || 'current';
       const standingsUrl = `https://www.sofascore.com/api/v1/unique-tournament/${leagueId}/season/${standingsSeasonId}/standings/total`;
       console.log(`   ↳ Récupération du classement via: ${standingsUrl}`);
       const standings = await fetchJson(standingsUrl, `standings-${leagueId}`);
-      if (!standings || !Array.isArray(standings.standings) && !Array.isArray(standings.rows) && !Array.isArray(standings.rows || standings.standings)) {
-        // Some responses use structure { standings: [ { rows: [...] } ] } or { rows: [...] }
-        // We'll try to extract rows.
-      }
-
-      // extract rows array robustly
       let rows = [];
       if (standings) {
         if (Array.isArray(standings.rows)) rows = standings.rows;
         else if (Array.isArray(standings.standings) && standings.standings.length && Array.isArray(standings.standings[0].rows)) {
           rows = standings.standings[0].rows;
-        } else if (Array.isArray(standings.rows || [])) rows = standings.rows;
-        else if (Array.isArray(standings.standings)) {
-          // some endpoints might include rows under standings[].rows
-          for (const s of standings.standings) {
-            if (Array.isArray(s.rows)) {
-              rows = s.rows;
-              break;
-            }
-          }
         }
       }
+
       if (!rows || rows.length === 0) {
-        console.warn('   ⚠️ Impossible d\'extraire les lignes de classement (rows). On passe cette ligue.');
+        console.warn('   ⚠️ Impossible d\'extraire le top 3, on passe.');
         continue;
       }
 
-      // Take top 3 teams (rows sorted by position already)
       const top3 = rows.slice(0, 3).map(r => {
-        // various structures: r.team.id or r.team
         const teamObj = r.team || r;
-        return {
-          id: teamObj?.id,
-          name: teamObj?.name || (teamObj && teamObj.team && teamObj.team.name) || null
-        };
+        return { id: teamObj?.id, name: teamObj?.name || null };
       }).filter(t => t.id);
-      console.log(`   ↳ Top 3 récupéré : ${top3.map(t => `${t.name || t.id}`).join(' | ') || '(aucun)'}`);
 
-      // If no top3, skip
-      if (!top3 || top3.length === 0) {
-        console.warn('   ⚠️ Top3 vide, on passe cette ligue.');
-        continue;
-      }
+      console.log(`   ↳ Top 3 : ${top3.map(t => t.name || t.id).join(' | ')}`);
 
-      // From scheduled.events, find matches where homeTeam.id in top3
+      // Etape 3: sélectionner matchs où top3 joue à domicile
       const top3Ids = new Set(top3.map(t => t.id));
       const matchesTomorrow = scheduled.events.filter(e => e.homeTeam && top3Ids.has(e.homeTeam.id));
       if (!matchesTomorrow || matchesTomorrow.length === 0) {
@@ -221,85 +186,56 @@ function tomorrowISO() {
         continue;
       }
 
-      console.log(`   🏆 ${matchesTomorrow.length} match(s) demain où un Top 3 joue à domicile.`);
-
-      // For each such match, check last match of the home team via team/{id}/events/last/1
+      // Etape 4: récupérer dernier match de l’équipe à domicile et vérifier défaite
       for (const m of matchesTomorrow) {
         const home = m.homeTeam;
         const away = m.awayTeam;
         const matchId = m.id;
         const startTs = m.startTimestamp;
         const slug = m.slug || null;
-        console.log(`     → Match ${slug || matchId} : ${home.name} (id:${home.id}) vs ${away?.name || 'unknown'} (id:${away?.id || 'unknown'}) at ${startTs}`);
 
-        const lastEventUrl = `https://www.sofascore.com/api/v1/team/${home.id}/events/last/1`;
-        console.log(`       ↳ Récupération du dernier match de l'équipe (home) via: ${lastEventUrl}`);
+        console.log(`     → Match ${slug || matchId} : ${home.name} vs ${away?.name || 'unknown'} at ${startTs}`);
+
+        if (!roundId) {
+          console.warn('       ⚠️ roundId manquant, impossible de récupérer le dernier match correctement.');
+          continue;
+        }
+
+        const lastEventUrl = `https://www.sofascore.com/api/v1/team/${home.id}/unique-tournament/${leagueId}/events/last/${roundId}`;
+        console.log(`       ↳ Récupération du dernier match de l'équipe via: ${lastEventUrl}`);
         const lastEv = await fetchJson(lastEventUrl, `team-last-${home.id}`);
         if (!lastEv) {
           console.warn('       ⚠️ Impossible de récupérer last event, on passe ce match.');
           continue;
         }
 
-        // Attempt to extract result: structure varies. Look for lastEv.events[0].status/result or lastEv.lastMatch etc.
-        let lastMatch = null;
-        if (Array.isArray(lastEv.events) && lastEv.events.length > 0) lastMatch = lastEv.events[0];
-        else if (Array.isArray(lastEv) && lastEv.length > 0) lastMatch = lastEv[0];
-        else if (lastEv.lastMatch) lastMatch = lastEv.lastMatch;
-        else if (lastEv.event) lastMatch = lastEv.event;
-
+        let lastMatch = Array.isArray(lastEv.events) ? lastEv.events[0] : lastEv.lastMatch || lastEv.event || null;
         if (!lastMatch) {
-          console.warn('       ⚠️ Format last match non reconnu, on passe.');
+          console.warn('       ⚠️ Format last match non reconnu.');
           continue;
         }
 
-        // Determine if the team lost its last match.
-        // Many responses have "result" string or "homeScore/awayScore" to compare.
-        // We'll try common patterns:
-        let lastResult = null; // 'win'|'loss'|'draw' or null
+        let lastResult = null;
         try {
-          if (lastMatch.result) { // sometimes string
-            lastResult = lastMatch.result;
-          } else if (lastMatch.status && lastMatch.status.type) {
-            lastResult = lastMatch.status.type; // not always the result
-          } else if (typeof lastMatch.homeScore === 'object' && typeof lastMatch.awayScore === 'object') {
-            // compare numeric fields if present
-            const hs = lastMatch.homeScore?.current ?? lastMatch.homeScore?.display ?? null;
-            const as = lastMatch.awayScore?.current ?? lastMatch.awayScore?.display ?? null;
-            // if numeric values available, compare
-            const hsn = Number(hs);
-            const asn = Number(as);
-            if (!Number.isNaN(hsn) && !Number.isNaN(asn)) {
-              // determine if home team was our team or away team (we don't always know). We'll check lastMatch.homeTeam.id
-              const lastHomeId = lastMatch.homeTeam?.id;
-              if (lastHomeId === home.id) {
-                lastResult = hsn > asn ? 'win' : (hsn < asn ? 'loss' : 'draw');
-              } else if (lastMatch.awayTeam?.id === home.id) {
-                lastResult = asn > hsn ? 'win' : (asn < hsn ? 'loss' : 'draw');
-              }
+          if (lastMatch.result) lastResult = lastMatch.result;
+          else if (lastMatch.homeScore && lastMatch.awayScore) {
+            const hs = Number(lastMatch.homeScore.current ?? lastMatch.homeScore.display);
+            const as = Number(lastMatch.awayScore.current ?? lastMatch.awayScore.display);
+            if (!Number.isNaN(hs) && !Number.isNaN(as)) {
+              lastResult = (lastMatch.homeTeam?.id === home.id ? (hs < as ? 'loss' : (hs > as ? 'win' : 'draw')) : (as < hs ? 'loss' : (as > hs ? 'win' : 'draw')));
             }
-          } else if (lastMatch.homeTeam && lastMatch.awayTeam && (lastMatch.homeTeam.id || lastMatch.awayTeam.id) && lastMatch.scores) {
-            // other variations
           }
+          if (!lastResult && lastMatch.winnerTeamId) lastResult = lastMatch.winnerTeamId === home.id ? 'win' : 'loss';
         } catch (e) {
           console.warn('       ⚠️ Erreur parse last match result:', e.message);
         }
 
-        // fallback check: some responses include "homeScore" and "awayScore" top-level with "winnerTeamId"
-        if (!lastResult && lastMatch.winnerTeamId) {
-          lastResult = (lastMatch.winnerTeamId === home.id) ? 'win' : 'loss';
-        }
+        if (!lastResult) continue;
 
-        // Another fallback: some lastMatch have .score?.label etc. We won't over-engineer — we'll accept null if unknown.
-        if (!lastResult) {
-          console.log('       ℹ️ Impossible de déterminer le résultat exact du dernier match (format inconnu). On l\'ignore.');
-          continue;
-        }
+        console.log(`       ↳ Résultat du dernier match : ${lastResult}`);
 
-        console.log(`       ↳ Résultat du dernier match de ${home.name} : ${lastResult}`);
-
-        // We want teams that **lost** their last match
-        if (String(lastResult).toLowerCase().includes('loss') || String(lastResult).toLowerCase().includes('lost')) {
-          console.log('       ✅ Équipe a perdu dernier match -> ajout à la liste d\'envoi.');
+        if (String(lastResult).toLowerCase().includes('loss')) {
+          console.log('       ✅ Équipe a perdu -> ajout.');
           matchesToSend.push({
             country,
             league: leagueName,
@@ -315,19 +251,19 @@ function tomorrowISO() {
             lastMatchResult: lastResult
           });
         } else {
-          console.log('       ⛔ Équipe n\'a pas perdu le dernier match -> ignore.');
+          console.log('       ⛔ Équipe n\'a pas perdu -> ignore.');
         }
-      } // end matchesTomorrow loop
-    } // end leagues loop
-  } // end countries loop
+      }
+    }
+  }
 
-  // Envoi au VPS si on a des matches
+  // Envoi au VPS
   if (matchesToSend.length > 0) {
-    console.log(`\n📤 Préparation à l'envoi au VPS... (${matchesToSend.length} match(es))`);
+    console.log(`\n📤 Envoi au VPS... (${matchesToSend.length} match(es))`);
     const payload = {
       groupe: '1',
       generatedAt: new Date().toISOString(),
-      analysisDate: (new Date()).toISOString(),
+      analysisDate: new Date().toISOString(),
       dateTarget: dateTomorrow,
       matches: matchesToSend
     };
@@ -338,16 +274,13 @@ function tomorrowISO() {
         timeout: NAV_TIMEOUT
       });
       const text = await resp.text();
-      if (resp.ok) {
-        console.log('✅ JSON envoyé avec succès au VPS ! Réponse VPS:', text.slice(0, 200));
-      } else {
-        console.error('⛔ Erreur lors du POST vers VPS :', resp.status(), text.slice(0, 400));
-      }
+      if (resp.ok) console.log('✅ JSON envoyé avec succès au VPS !');
+      else console.error('⛔ Erreur lors du POST vers VPS :', resp.status(), text.slice(0, 400));
     } catch (e) {
-      console.error('⛔ Erreur lors du POST vers VPS (exception) :', e.message);
+      console.error('⛔ Exception lors du POST vers VPS :', e.message);
     }
   } else {
-    console.log('\nℹ️ Aucun match à envoyer pour demain.');
+    console.log('\nℹ️ Aucun match à envoyer.');
   }
 
   await browser.close();
