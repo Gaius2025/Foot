@@ -31,4 +31,4 @@ jobs:
         run: |
           echo "🚀 Démarrage de l’analyse du Groupe 1..."
           node scripts/fetch_group1.js
-          echo "🏁 Fin du script Groupe 1.”
+          echo "🏁 Fin du script Groupe 1."
