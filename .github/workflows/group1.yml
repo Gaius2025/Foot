@@ -1,9 +1,9 @@
 name: Fetch Group 1 Top 3 Analysis
 
 on:
-  workflow_dispatch: # Permet de lancer manuellement depuis GitHub Actions
+  workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *" # Exécution automatique toutes les 6 heures (UTC)
+    - cron: "0 */6 * * *" # toutes les 6 heures
 
 jobs:
   fetch_group1:
@@ -21,7 +21,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci
+          npm install
           npx playwright install --with-deps
 
       - name: Run Group 1 Analysis Script
