@@ -193,7 +193,8 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
           console.warn('       ⚠️ Aucun dernier match trouvé.');
           continue;
         }
-        const lastMatch = lastEv.events[0];
+        const lastMatch = lastEv.events[lastEv.events.length - 1];
+        console.log(`       🔁 Dernier match sélectionné : ${lastMatch.slug || lastMatch.id}`);
 
         // Analyse résultat
         let result = 'unknown';
