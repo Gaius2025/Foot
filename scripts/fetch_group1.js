@@ -1,6 +1,6 @@
 // scripts/fetch_group1.js
-// Analyse Group 1 (top3/home/last match lost → envoi VPS)
-// Usage: node scripts/fetch_group1.js
+// Analyse Group 1 : Top 3 à domicile + dernier match perdu → envoi au VPS
+// Usage : node scripts/fetch_group1.js
 // Variables d'env requises : VPS_WEBHOOK (obligatoire), SOFASCORE_COOKIE (optionnel)
 
 const { chromium } = require('playwright');
@@ -18,105 +18,145 @@ if (!VPS_WEBHOOK) {
   process.exit(1);
 }
 
+// -----------------------------------------------------------------------------
+// Utils
+// -----------------------------------------------------------------------------
 function tomorrowISO() {
   const t = new Date();
   t.setDate(t.getDate() + 1);
-  const yyyy = t.getFullYear();
-  const mm = String(t.getMonth() + 1).padStart(2, '0');
-  const dd = String(t.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
 }
 
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// -----------------------------------------------------------------------------
+// Main script
+// -----------------------------------------------------------------------------
 (async () => {
   console.log('🚀 Démarrage du script Group 1...');
 
-  // Lecture du fichier table1.json
+  // Lire la table
   let table;
   try {
     const raw = fs.readFileSync(TABLE_PATH, 'utf-8');
     table = JSON.parse(raw);
     console.log(`📖 Lecture du fichier : ${TABLE_PATH}`);
   } catch (err) {
-    console.error('❌ Impossible de lire/parse table1.json :', err.message);
+    console.error('❌ Erreur lecture table1.json :', err.message);
     process.exit(2);
   }
 
   const countries = Object.keys(table || {});
   console.log(`✅ Table chargée (${countries.length} pays trouvés).`);
 
-  const ua = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36";
   const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const context = await browser.newContext({
+    userAgent: "Mozilla/5.0 (Linux; Android 6.0; Nexus 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36"
+  });
 
-  const ctx = await browser.newContext({ userAgent: ua });
+  // Ajouter cookies si fournis
   if (COOKIE.trim()) {
     try {
-      await ctx.addCookies(
-        COOKIE.split(';').map(c => {
-          const [n, ...v] = c.trim().split('=');
-          return { name: n, value: v.join('='), domain: 'www.sofascore.com', path: '/', secure: true };
-        })
-      );
-      console.log('🔐 Cookies ajoutés.');
+      const cookies = COOKIE.split(';').map(s => s.trim()).filter(Boolean).map(p => {
+        const [name, ...rest] = p.split('=');
+        return {
+          name: name.trim(),
+          value: rest.join('='),
+          domain: 'www.sofascore.com',
+          path: '/',
+          secure: true
+        };
+      });
+      await context.addCookies(cookies);
+      console.log('🔐 Cookies ajoutés au contexte navigateur.');
     } catch (e) {
       console.warn('⚠️ Erreur ajout cookies :', e.message);
     }
   }
-  const page = await ctx.newPage();
 
+  const page = await context.newPage();
+
+  // ---------------------------------------------------------------------------
+  // Helper: fetch JSON (avec retry et logs)
+  // ---------------------------------------------------------------------------
   async function fetchJson(url, label = '') {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const resp = await page.goto(url, { waitUntil: 'networkidle', timeout: NAV_TIMEOUT });
-        if (!resp) throw new Error('Pas de réponse');
+        if (!resp) throw new Error('Réponse vide');
         if (resp.status() >= 400) throw new Error(`HTTP ${resp.status()}`);
-        try { return await resp.json(); } catch { return JSON.parse(await resp.text()); }
+        const text = await resp.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error('Réponse non JSON');
+        }
       } catch (err) {
-        console.warn(`⚠️ [${label}] tentative ${attempt} échouée (${err.message})`);
-        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000 * attempt));
+        console.warn(`⚠️ [${label}] Tentative ${attempt}/${MAX_ATTEMPTS} échouée (${err.message})`);
+        if (attempt < MAX_ATTEMPTS) await sleep(1000);
       }
     }
     return null;
   }
 
   const dateTomorrow = tomorrowISO();
-  console.log(`📅 Date cible : ${dateTomorrow}`);
+  console.log(`📅 Date ciblée : ${dateTomorrow}`);
 
-  let matchesToSend = [];
+  const matchesToSend = [];
 
-  // --- Boucle sur les pays ---
+  // ---------------------------------------------------------------------------
+  // Boucle pays / ligues
+  // ---------------------------------------------------------------------------
   for (const country of countries) {
     console.log(`\n🌍 Pays : ${country}`);
     const data = table[country];
-    if (!data || !Array.isArray(data.leagues)) continue;
+    if (!data?.leagues?.length) {
+      console.warn('⚠️ Aucun championnat pour ce pays, on saute.');
+      continue;
+    }
 
     for (const league of data.leagues) {
-      const leagueName = league.name;
+      const leagueName = league.name || 'Inconnu';
       const leagueId = league.id;
-      console.log(`\n ⚽ Ligue : ${leagueName} (ID: ${leagueId})`);
+      if (!leagueId) continue;
+      console.log(`\n⚽ Ligue : ${leagueName} (ID: ${leagueId})`);
 
-      // 1️⃣ Récupération des matchs de demain
+      // ───────────────────────────────────────────────
+      // ÉTAPE 1 → Récupération des matchs de demain
+      // ───────────────────────────────────────────────
       const scheduledUrl = `https://www.sofascore.com/api/v1/unique-tournament/${leagueId}/scheduled-events/${dateTomorrow}`;
+      console.log(`➡️ [Étape 1] API : ${scheduledUrl}`);
       const scheduled = await fetchJson(scheduledUrl, `scheduled-${leagueId}`);
       if (!scheduled?.events?.length) {
-        console.log('   ⚠️ Aucun match trouvé pour demain.');
+        console.log('   Aucun match trouvé pour demain.');
         continue;
       }
-      const seasonId = scheduled.events.find(e => e.season?.id)?.season?.id;
-      if (!seasonId) {
-        console.log('   ⚠️ season.id introuvable, on passe.');
-        continue;
-      }
-      console.log(`   ↳ season.id = ${seasonId}`);
+      console.log(`   ${scheduled.events.length} match(s) trouvé(s) pour demain.`);
 
-      // 2️⃣ Classement (Top 3)
+      const seasonId = scheduled.events.find(e => e.season?.id)?.season?.id || null;
+      if (!seasonId) {
+        console.warn('   ⚠️ season.id introuvable, on saute cette ligue.');
+        continue;
+      }
+      console.log(`   ✅ season.id = ${seasonId}`);
+
+      // ───────────────────────────────────────────────
+      // ÉTAPE 2 → Récupération du classement (Top 3)
+      // ───────────────────────────────────────────────
       const standingsUrl = `https://www.sofascore.com/api/v1/unique-tournament/${leagueId}/season/${seasonId}/standings/total`;
+      console.log(`➡️ [Étape 2] API : ${standingsUrl}`);
       const standings = await fetchJson(standingsUrl, `standings-${leagueId}`);
+      if (!standings) {
+        console.warn('   ⚠️ Pas de données standings.');
+        continue;
+      }
+
       let rows = [];
-      if (Array.isArray(standings?.rows)) rows = standings.rows;
-      else if (Array.isArray(standings?.standings) && standings.standings[0]?.rows)
-        rows = standings.standings[0].rows;
+      if (Array.isArray(standings.rows)) rows = standings.rows;
+      else if (standings.standings?.[0]?.rows) rows = standings.standings[0].rows;
+
       if (!rows.length) {
-        console.log('   ⚠️ Pas de rows (classement vide).');
+        console.warn('   ⚠️ Aucune ligne de classement trouvée.');
         continue;
       }
 
@@ -124,83 +164,107 @@ function tomorrowISO() {
         id: r.team?.id,
         name: r.team?.name
       })).filter(t => t.id);
-      console.log(`   🏆 Top 3: ${top3.map(t => t.name).join(' | ')}`);
+      console.log(`   🏆 Top 3 : ${top3.map(t => t.name).join(' | ')}`);
 
+      if (!top3.length) continue;
       const top3Ids = new Set(top3.map(t => t.id));
-      const homeMatches = scheduled.events.filter(e => top3Ids.has(e.homeTeam?.id));
-      if (!homeMatches.length) {
-        console.log('   🏟️ Aucun match à domicile d\'une équipe du top 3.');
+
+      // ───────────────────────────────────────────────
+      // ÉTAPE 3 → Matchs où Top 3 joue à domicile
+      // ───────────────────────────────────────────────
+      const matchesTomorrow = scheduled.events.filter(e => e.homeTeam && top3Ids.has(e.homeTeam.id));
+      if (!matchesTomorrow.length) {
+        console.log('   Aucun match où un Top 3 joue à domicile.');
         continue;
       }
+      console.log(`   ✅ ${matchesTomorrow.length} match(s) Top3 à domicile.`);
 
-      // 3️⃣ Vérif du dernier match dans le même championnat
-      for (const m of homeMatches) {
+      // ───────────────────────────────────────────────
+      // ÉTAPE 4 → Vérifier dernier match (dans même tournoi)
+      // ───────────────────────────────────────────────
+      for (const m of matchesTomorrow) {
         const home = m.homeTeam;
         const away = m.awayTeam;
-        const slug = m.slug;
-        console.log(`     → Match : ${home.name} vs ${away.name}`);
-
-        const lastUrl = `https://www.sofascore.com/api/v1/team/${home.id}/unique-tournament/${leagueId}/events/last/0`;
-        const lastData = await fetchJson(lastUrl, `last-${home.id}`);
-        if (!lastData?.events?.length) {
-          console.log('       ⚠️ Aucun last event trouvé.');
+        console.log(`\n     ▶️ ${home.name} (home) vs ${away.name}`);
+        const lastEventUrl = `https://www.sofascore.com/api/v1/team/${home.id}/unique-tournament/${leagueId}/events/last/0`;
+        console.log(`➡️ [Étape 4] API : ${lastEventUrl}`);
+        const lastEv = await fetchJson(lastEventUrl, `last-${home.id}`);
+        if (!lastEv?.events?.length) {
+          console.warn('       ⚠️ Aucun dernier match trouvé.');
           continue;
         }
-        const lastMatch = lastData.events[0];
-        let res = null;
+        const lastMatch = lastEv.events[0];
+
+        // Analyse résultat
+        let result = 'unknown';
         const hs = lastMatch.homeScore?.current;
         const as = lastMatch.awayScore?.current;
-        if (hs != null && as != null) {
-          if (lastMatch.homeTeam?.id === home.id) res = hs > as ? 'win' : hs < as ? 'loss' : 'draw';
-          else if (lastMatch.awayTeam?.id === home.id) res = as > hs ? 'win' : as < hs ? 'loss' : 'draw';
+        if (typeof hs === 'number' && typeof as === 'number') {
+          if (lastMatch.homeTeam?.id === home.id) {
+            result = hs > as ? 'win' : hs < as ? 'loss' : 'draw';
+          } else if (lastMatch.awayTeam?.id === home.id) {
+            result = as > hs ? 'win' : as < hs ? 'loss' : 'draw';
+          }
+        } else if (lastMatch.winnerTeamId) {
+          result = lastMatch.winnerTeamId === home.id ? 'win' : 'loss';
         }
 
-        if (res === 'loss') {
-          console.log(`       ✅ ${home.name} a perdu son dernier match.`);
+        console.log(`       🔎 Résultat dernier match : ${result}`);
+        if (result === 'loss') {
+          console.log('       ✅ Équipe a perdu son dernier match → ajoutée à la liste.');
           matchesToSend.push({
             country,
             league: leagueName,
             leagueId,
             seasonId,
             match: {
-              id: m.id,
-              slug,
+              matchId: m.id,
+              slug: m.slug,
               startTimestamp: m.startTimestamp,
               homeTeam: { id: home.id, name: home.name },
               awayTeam: { id: away.id, name: away.name }
-            }
+            },
+            lastMatchResult: result
           });
         } else {
-          console.log(`       ⛔ ${home.name} n'a pas perdu (résultat: ${res || 'inconnu'}).`);
+          console.log('       ⛔ Pas une défaite → ignoré.');
         }
       }
     }
   }
 
-  // 4️⃣ Envoi au VPS
+  // ---------------------------------------------------------------------------
+  // Envoi au VPS
+  // ---------------------------------------------------------------------------
   if (matchesToSend.length) {
-    console.log(`\n📤 Envoi de ${matchesToSend.length} match(es) au VPS...`);
+    console.log(`\n📤 Envoi au VPS... (${matchesToSend.length} match(es))`);
     const payload = {
       groupe: '1',
       generatedAt: new Date().toISOString(),
+      analysisDate: new Date().toISOString(),
       dateTarget: dateTomorrow,
       matches: matchesToSend
     };
+
     try {
       const resp = await page.request.post(VPS_WEBHOOK, {
         headers: { 'Content-Type': 'application/json' },
         data: payload,
         timeout: NAV_TIMEOUT
       });
-      console.log(resp.ok ? '✅ Données envoyées au VPS.' : `⛔ Erreur HTTP VPS: ${resp.status()}`);
-    } catch (e) {
-      console.error('⛔ Erreur lors de l\'envoi au VPS :', e.message);
+      const text = await resp.text();
+      if (resp.ok()) {
+        console.log('✅ Données envoyées avec succès ! Réponse VPS :', text.slice(0, 200));
+      } else {
+        console.error('⛔ Erreur VPS :', resp.status(), text.slice(0, 400));
+      }
+    } catch (err) {
+      console.error('⛔ Erreur POST VPS :', err.message);
     }
   } else {
-    console.log('\nℹ️ Aucun match à envoyer.');
+    console.log('\nℹ️ Aucun match à envoyer pour demain.');
   }
 
   await browser.close();
   console.log('\n🏁 Fin du script Group 1.');
-  process.exit(0);
 })();
