@@ -1,185 +1,356 @@
 // scripts/fetch_group1.js
-// 🚀 Analyse complète d’un groupe Sofascore (Group 1)
-// Objectif : identifier les matchs de demain où un top 3 joue à domicile, et les envoyer au VPS
+// Playwright script: analyse Group 1 (top3/home/last match lost -> envoi au VPS)
+// Usage: node scripts/fetch_group1.js
+// Doit être exécuté dans un projet avec playwright installé.
+// Variables d'env : VPS_WEBHOOK (obligatoire), SOFASCORE_COOKIE (optionnel)
 
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-// === CONFIGURATION ===
 const TABLE_PATH = path.join(__dirname, '../tables/table1.json');
 const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
 const COOKIE = process.env.SOFASCORE_COOKIE || '';
 const MAX_ATTEMPTS = 2;
-const GROUP_NAME = '1';
-
-// === Vérifications initiales ===
-console.log(`🚀 Démarrage du script Group ${GROUP_NAME}...`);
+const NAV_TIMEOUT = 20000;
 
 if (!VPS_WEBHOOK) {
-  console.error("❌ Erreur : aucune URL VPS_WEBHOOK trouvée dans les variables d’environnement !");
-  process.exit(2);
+  console.error('❌ VPS_WEBHOOK non défini. Mets la variable d\'env VPS_WEBHOOK et relance.');
+  process.exit(1);
 }
 
-if (!fs.existsSync(TABLE_PATH)) {
-  console.error(`❌ Erreur : fichier ${TABLE_PATH} introuvable !`);
-  process.exit(3);
+function tomorrowISO() {
+  const t = new Date();
+  t.setDate(t.getDate() + 1);
+  const yyyy = t.getFullYear();
+  const mm = String(t.getMonth() + 1).padStart(2, '0');
+  const dd = String(t.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-console.log(`📖 Lecture du fichier : ${TABLE_PATH}`);
-const table = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf-8'));
-console.log(`✅ Table chargée (${Object.keys(table).length} pays trouvés).`);
-
-// === Lancement Playwright ===
 (async () => {
+  console.log('🚀 Démarrage du script Group 1...');
+  // Charger table1.json
+  let table;
+  try {
+    const raw = fs.readFileSync(TABLE_PATH, 'utf-8');
+    table = JSON.parse(raw);
+    console.log(`📖 Lecture du fichier : ${TABLE_PATH}`);
+  } catch (err) {
+    console.error('❌ Impossible de lire/parse table1.json :', err.message);
+    process.exit(2);
+  }
+
+  const countries = Object.keys(table || {});
+  console.log(`✅ Table chargée (${countries.length} pays trouvés).`);
+
   const ua = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36";
   const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
 
-  try {
-    const context = await browser.newContext({ userAgent: ua });
-
-    // Gestion des cookies
+  const page = await (async () => {
+    const ctx = await browser.newContext({ userAgent: ua });
     if (COOKIE.trim()) {
       const cookiePairs = COOKIE.split(';').map(s => s.trim()).filter(Boolean);
       const cookies = cookiePairs.map(pair => {
         const [name, ...rest] = pair.split('=');
-        return { name: name.trim(), value: rest.join('='), domain: 'www.sofascore.com', path: '/', httpOnly: false, secure: true };
+        return {
+          name: name.trim(),
+          value: rest.join('='),
+          domain: 'www.sofascore.com',
+          path: '/',
+          httpOnly: false,
+          secure: true
+        };
       });
-      if (cookies.length) await context.addCookies(cookies);
-    }
-
-    const page = await context.newPage();
-    const matchesToSend = [];
-
-    // Calcul de la date de demain
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const yyyy = tomorrow.getFullYear();
-    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const dd = String(tomorrow.getDate()).padStart(2, '0');
-    const formattedDate = `${yyyy}-${mm}-${dd}`;
-
-    // === Analyse principale ===
-    for (const [country, data] of Object.entries(table)) {
-      console.log(`\n🌍 Traitement du pays : ${country}`);
-
-      for (const league of data.leagues) {
-        console.log(` ⚽ Ligue : ${league.name} (ID: ${league.id})`);
-
-        // Étape 1 : récupérer les matchs de demain
-        const scheduleUrl = `https://www.sofascore.com/api/v1/unique-tournament/${league.id}/scheduled-events/${formattedDate}`;
-        let scheduleData;
+      if (cookies.length) {
         try {
-          const resp = await page.goto(scheduleUrl, { waitUntil: 'networkidle', timeout: 20000 });
-          scheduleData = await resp.json();
-          console.log(` ↳ ${scheduleData.events?.length || 0} matchs trouvés pour ${formattedDate}`);
-        } catch (err) {
-          console.warn(` ⚠️ Impossible de récupérer les matchs : ${err.message}`);
-          continue;
-        }
-
-        if (!scheduleData?.events?.length) continue;
-
-        const seasonId = scheduleData.events[0]?.season?.id;
-        if (!seasonId) {
-          console.warn(" ⚠️ Aucun season_id détecté, on saute cette ligue.");
-          continue;
-        }
-
-        // Étape 2 : récupérer le classement (top 3)
-        const standingsUrl = `https://www.sofascore.com/api/v1/unique-tournament/${league.id}/season/${seasonId}/standings/total`;
-        let standingsData;
-        try {
-          const resp = await page.goto(standingsUrl, { waitUntil: 'networkidle', timeout: 20000 });
-          standingsData = await resp.json();
-          console.log(` ↳ Classement récupéré avec succès.`);
-        } catch {
-          console.warn(" ⚠️ Erreur lors de la récupération du classement.");
-          continue;
-        }
-
-        const top3 = standingsData?.standings?.[0]?.rows?.slice(0, 3)?.map(r => ({
-          id: r.team.id,
-          name: r.team.name
-        })) || [];
-        console.log(` 🏆 Top 3 équipes extraites (${top3.length} trouvées).`);
-
-        if (!top3.length) continue;
-
-        // Étape 3 : filtrer les matchs du jour avec un top 3 à domicile
-        const filteredMatches = scheduleData.events.filter(ev =>
-          top3.some(t => t.id === ev.homeTeam?.id)
-        );
-
-        if (!filteredMatches.length) {
-          console.log(" ❌ Aucun match avec un top 3 à domicile demain.");
-          continue;
-        }
-
-        for (const match of filteredMatches) {
-          const homeTeam = match.homeTeam;
-          const awayTeam = match.awayTeam;
-
-          // Étape 4 : récupérer le dernier match du top 3 à domicile
-          const lastUrl = `https://www.sofascore.com/api/v1/team/${homeTeam.id}/events/last/1`;
-          let lastData;
-          try {
-            const resp = await page.goto(lastUrl, { waitUntil: 'networkidle', timeout: 15000 });
-            lastData = await resp.json();
-          } catch {
-            console.warn(` ⚠️ Impossible de récupérer le dernier match pour ${homeTeam.name}`);
-          }
-
-          matchesToSend.push({
-            country,
-            league: league.name,
-            season_id: seasonId,
-            match_id: match.id,
-            match_slug: match.slug,
-            homeTeam: { id: homeTeam.id, name: homeTeam.name },
-            awayTeam: { id: awayTeam.id, name: awayTeam.name },
-            startTimestamp: match.startTimestamp,
-            lastHomeMatch: lastData?.events?.[0] || null
-          });
+          await ctx.addCookies(cookies);
+          console.log('🔐 Cookies ajoutés au contexte Playwright.');
+        } catch (e) {
+          console.warn('⚠️ Erreur ajout cookies :', e.message);
         }
       }
     }
+    return await ctx.newPage();
+  })();
 
-    // === Envoi au VPS ===
-    console.log("\n📤 Préparation à l’envoi au VPS...");
-    if (matchesToSend.length) {
-      const payload = {
-        groupe: GROUP_NAME,
-        timestamp: Date.now(),
-        matches: matchesToSend
-      };
-
-      const posted = await sendToVPS(VPS_WEBHOOK, payload);
-      if (posted.ok) console.log("✅ JSON envoyé avec succès au VPS !");
-      else console.error("⛔ Erreur lors du POST vers VPS:", posted.text || posted.error);
-    } else {
-      console.log("ℹ️ Aucun match à envoyer pour demain.");
+  // helper: goto and parse json robustly
+  async function fetchJson(url, label = '') {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const resp = await page.goto(url, { waitUntil: 'networkidle', timeout: NAV_TIMEOUT });
+        if (!resp) throw new Error('No response object');
+        const status = resp.status();
+        if (status >= 400) throw new Error(`HTTP ${status}`);
+        try {
+          const j = await resp.json();
+          return j;
+        } catch (errJson) {
+          // fallback: text -> parse
+          const txt = await resp.text();
+          try {
+            return JSON.parse(txt);
+          } catch (errParse) {
+            throw new Error('Response not JSON');
+          }
+        }
+      } catch (err) {
+        console.warn(`⚠️ [${label}] tentative ${attempt} échouée pour ${url} → ${err.message}`);
+        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000 * attempt));
+        else return null;
+      }
     }
-
-  } catch (err) {
-    console.error("💥 Erreur inattendue :", err);
-  } finally {
-    await browser.close();
-    console.log("🏁 Fin du script Group 1.");
+    return null;
   }
 
-  async function sendToVPS(url, body) {
+  const dateTomorrow = tomorrowISO();
+  console.log(`📅 Date (demain) utilisée pour l'analyse : ${dateTomorrow}`);
+
+  let matchesToSend = [];
+
+  for (const country of countries) {
+    console.log(`\n🌍 Traitement du pays : ${country}`);
+    const data = table[country];
+    if (!data || !Array.isArray(data.leagues)) {
+      console.warn(`⚠️ Aucun champ leagues pour ${country}, on passe.`);
+      continue;
+    }
+
+    for (const league of data.leagues) {
+      const leagueName = league.name || 'unknown';
+      const leagueId = league.id;
+      console.log(`\n ⚽ Ligue : ${leagueName} (ID: ${leagueId})`);
+
+      if (!leagueId) {
+        console.warn('   ⚠️ Pas d\'ID pour cette ligue, on passe.');
+        continue;
+      }
+
+      // Etape 1: scheduled events pour demain
+      const scheduledUrl = `https://www.sofascore.com/api/v1/unique-tournament/${leagueId}/scheduled-events/${dateTomorrow}`;
+      console.log(`   ↳ Récupération des matchs demain via: ${scheduledUrl}`);
+      const scheduled = await fetchJson(scheduledUrl, `scheduled-${leagueId}`);
+      if (!scheduled || !Array.isArray(scheduled.events)) {
+        console.warn('   ⚠️ Pas de données événements pour demain (ou erreur).');
+        continue;
+      }
+      console.log(`   ↳ ${scheduled.events.length} événement(s) reçu(s) pour ${leagueName}.`);
+
+      // try to get season id from the first event that has season
+      const seasonId = (scheduled.events.find(e => e.season && e.season.id && e.season.id > 0)?.season?.id) || null;
+      if (!seasonId) {
+        console.warn('   ⚠️ season.id introuvable dans scheduled-events. Tentative de récupération via unique-tournaments...');
+        // fallback: call category unique-tournaments (category.id is in event.tournament.category.id)
+        const catId = scheduled.events[0]?.tournament?.category?.id || null;
+        if (catId) {
+          const catUrl = `https://www.sofascore.com/api/v1/category/${catId}/unique-tournaments`;
+          console.log(`   ↳ Récupération unique-tournaments via: ${catUrl}`);
+          const catData = await fetchJson(catUrl, `category-${catId}`);
+          // best-effort: find the uniqueTournament with id === leagueId and maybe recent seasons (we cannot list seasons here)
+          // many uniqueTournaments have "id" field (uniqueTournament.id); but standings require season id; we'll just try to skip if unknown
+          if (!catData) {
+            console.warn('   ⚠️ Impossible d\'obtenir unique-tournaments. On pourra essayer standings "current" mais risque d\'échec.');
+          } else {
+            console.log('   ↳ unique-tournaments récupéré (non utilisé automatiquement pour season.id).');
+          }
+        } else {
+          console.warn('   ⚠️ Pas de category.id disponible non plus.');
+        }
+      } else {
+        console.log(`   ↳ season.id trouvé : ${seasonId}`);
+      }
+
+      // Step: retrieve standings (requires seasonId). If seasonId missing, try to attempt standings with "current" (best-effort).
+      if (!seasonId) {
+        console.warn('   ⚠️ Pas de seasonId fiable -> on tente standings avec "current" (peut échouer).');
+      }
+
+      const standingsSeasonId = seasonId || 'current';
+      const standingsUrl = `https://www.sofascore.com/api/v1/unique-tournament/${leagueId}/season/${standingsSeasonId}/standings/total`;
+      console.log(`   ↳ Récupération du classement via: ${standingsUrl}`);
+      const standings = await fetchJson(standingsUrl, `standings-${leagueId}`);
+      if (!standings || !Array.isArray(standings.standings) && !Array.isArray(standings.rows) && !Array.isArray(standings.rows || standings.standings)) {
+        // Some responses use structure { standings: [ { rows: [...] } ] } or { rows: [...] }
+        // We'll try to extract rows.
+      }
+
+      // extract rows array robustly
+      let rows = [];
+      if (standings) {
+        if (Array.isArray(standings.rows)) rows = standings.rows;
+        else if (Array.isArray(standings.standings) && standings.standings.length && Array.isArray(standings.standings[0].rows)) {
+          rows = standings.standings[0].rows;
+        } else if (Array.isArray(standings.rows || [])) rows = standings.rows;
+        else if (Array.isArray(standings.standings)) {
+          // some endpoints might include rows under standings[].rows
+          for (const s of standings.standings) {
+            if (Array.isArray(s.rows)) {
+              rows = s.rows;
+              break;
+            }
+          }
+        }
+      }
+      if (!rows || rows.length === 0) {
+        console.warn('   ⚠️ Impossible d\'extraire les lignes de classement (rows). On passe cette ligue.');
+        continue;
+      }
+
+      // Take top 3 teams (rows sorted by position already)
+      const top3 = rows.slice(0, 3).map(r => {
+        // various structures: r.team.id or r.team
+        const teamObj = r.team || r;
+        return {
+          id: teamObj?.id,
+          name: teamObj?.name || (teamObj && teamObj.team && teamObj.team.name) || null
+        };
+      }).filter(t => t.id);
+      console.log(`   ↳ Top 3 récupéré : ${top3.map(t => `${t.name || t.id}`).join(' | ') || '(aucun)'}`);
+
+      // If no top3, skip
+      if (!top3 || top3.length === 0) {
+        console.warn('   ⚠️ Top3 vide, on passe cette ligue.');
+        continue;
+      }
+
+      // From scheduled.events, find matches where homeTeam.id in top3
+      const top3Ids = new Set(top3.map(t => t.id));
+      const matchesTomorrow = scheduled.events.filter(e => e.homeTeam && top3Ids.has(e.homeTeam.id));
+      if (!matchesTomorrow || matchesTomorrow.length === 0) {
+        console.log('   🏆 Aucun match demain impliquant un Top 3 à domicile pour cette ligue.');
+        continue;
+      }
+
+      console.log(`   🏆 ${matchesTomorrow.length} match(s) demain où un Top 3 joue à domicile.`);
+
+      // For each such match, check last match of the home team via team/{id}/events/last/1
+      for (const m of matchesTomorrow) {
+        const home = m.homeTeam;
+        const away = m.awayTeam;
+        const matchId = m.id;
+        const startTs = m.startTimestamp;
+        const slug = m.slug || null;
+        console.log(`     → Match ${slug || matchId} : ${home.name} (id:${home.id}) vs ${away?.name || 'unknown'} (id:${away?.id || 'unknown'}) at ${startTs}`);
+
+        const lastEventUrl = `https://www.sofascore.com/api/v1/team/${home.id}/events/last/1`;
+        console.log(`       ↳ Récupération du dernier match de l'équipe (home) via: ${lastEventUrl}`);
+        const lastEv = await fetchJson(lastEventUrl, `team-last-${home.id}`);
+        if (!lastEv) {
+          console.warn('       ⚠️ Impossible de récupérer last event, on passe ce match.');
+          continue;
+        }
+
+        // Attempt to extract result: structure varies. Look for lastEv.events[0].status/result or lastEv.lastMatch etc.
+        let lastMatch = null;
+        if (Array.isArray(lastEv.events) && lastEv.events.length > 0) lastMatch = lastEv.events[0];
+        else if (Array.isArray(lastEv) && lastEv.length > 0) lastMatch = lastEv[0];
+        else if (lastEv.lastMatch) lastMatch = lastEv.lastMatch;
+        else if (lastEv.event) lastMatch = lastEv.event;
+
+        if (!lastMatch) {
+          console.warn('       ⚠️ Format last match non reconnu, on passe.');
+          continue;
+        }
+
+        // Determine if the team lost its last match.
+        // Many responses have "result" string or "homeScore/awayScore" to compare.
+        // We'll try common patterns:
+        let lastResult = null; // 'win'|'loss'|'draw' or null
+        try {
+          if (lastMatch.result) { // sometimes string
+            lastResult = lastMatch.result;
+          } else if (lastMatch.status && lastMatch.status.type) {
+            lastResult = lastMatch.status.type; // not always the result
+          } else if (typeof lastMatch.homeScore === 'object' && typeof lastMatch.awayScore === 'object') {
+            // compare numeric fields if present
+            const hs = lastMatch.homeScore?.current ?? lastMatch.homeScore?.display ?? null;
+            const as = lastMatch.awayScore?.current ?? lastMatch.awayScore?.display ?? null;
+            // if numeric values available, compare
+            const hsn = Number(hs);
+            const asn = Number(as);
+            if (!Number.isNaN(hsn) && !Number.isNaN(asn)) {
+              // determine if home team was our team or away team (we don't always know). We'll check lastMatch.homeTeam.id
+              const lastHomeId = lastMatch.homeTeam?.id;
+              if (lastHomeId === home.id) {
+                lastResult = hsn > asn ? 'win' : (hsn < asn ? 'loss' : 'draw');
+              } else if (lastMatch.awayTeam?.id === home.id) {
+                lastResult = asn > hsn ? 'win' : (asn < hsn ? 'loss' : 'draw');
+              }
+            }
+          } else if (lastMatch.homeTeam && lastMatch.awayTeam && (lastMatch.homeTeam.id || lastMatch.awayTeam.id) && lastMatch.scores) {
+            // other variations
+          }
+        } catch (e) {
+          console.warn('       ⚠️ Erreur parse last match result:', e.message);
+        }
+
+        // fallback check: some responses include "homeScore" and "awayScore" top-level with "winnerTeamId"
+        if (!lastResult && lastMatch.winnerTeamId) {
+          lastResult = (lastMatch.winnerTeamId === home.id) ? 'win' : 'loss';
+        }
+
+        // Another fallback: some lastMatch have .score?.label etc. We won't over-engineer — we'll accept null if unknown.
+        if (!lastResult) {
+          console.log('       ℹ️ Impossible de déterminer le résultat exact du dernier match (format inconnu). On l\'ignore.');
+          continue;
+        }
+
+        console.log(`       ↳ Résultat du dernier match de ${home.name} : ${lastResult}`);
+
+        // We want teams that **lost** their last match
+        if (String(lastResult).toLowerCase().includes('loss') || String(lastResult).toLowerCase().includes('lost')) {
+          console.log('       ✅ Équipe a perdu dernier match -> ajout à la liste d\'envoi.');
+          matchesToSend.push({
+            country,
+            league: leagueName,
+            leagueId,
+            seasonId: seasonId || null,
+            match: {
+              matchId,
+              slug,
+              startTimestamp: startTs,
+              homeTeam: { id: home.id, name: home.name },
+              awayTeam: { id: away?.id, name: away?.name }
+            },
+            lastMatchResult: lastResult
+          });
+        } else {
+          console.log('       ⛔ Équipe n\'a pas perdu le dernier match -> ignore.');
+        }
+      } // end matchesTomorrow loop
+    } // end leagues loop
+  } // end countries loop
+
+  // Envoi au VPS si on a des matches
+  if (matchesToSend.length > 0) {
+    console.log(`\n📤 Préparation à l'envoi au VPS... (${matchesToSend.length} match(es))`);
+    const payload = {
+      groupe: '1',
+      generatedAt: new Date().toISOString(),
+      analysisDate: (new Date()).toISOString(),
+      dateTarget: dateTomorrow,
+      matches: matchesToSend
+    };
     try {
-      const resp = await fetch(url, {
-        method: 'POST',
+      const resp = await page.request.post(VPS_WEBHOOK, {
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        data: payload,
+        timeout: NAV_TIMEOUT
       });
-      const text = await resp.text().catch(() => '');
-      return { ok: resp.ok, status: resp.status, text };
-    } catch (err) {
-      return { ok: false, error: String(err) };
+      const text = await resp.text();
+      if (resp.ok) {
+        console.log('✅ JSON envoyé avec succès au VPS ! Réponse VPS:', text.slice(0, 200));
+      } else {
+        console.error('⛔ Erreur lors du POST vers VPS :', resp.status(), text.slice(0, 400));
+      }
+    } catch (e) {
+      console.error('⛔ Erreur lors du POST vers VPS (exception) :', e.message);
     }
+  } else {
+    console.log('\nℹ️ Aucun match à envoyer pour demain.');
   }
 
+  await browser.close();
+  console.log('\n🏁 Fin du script Group 1.');
+  process.exit(0);
 })();
