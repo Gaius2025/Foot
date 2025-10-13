@@ -1,4 +1,4 @@
-name: Fetch Group 1 Top 3 Analysis
+name: Fetch Group 1 Football
 
 on:
   workflow_dispatch:
