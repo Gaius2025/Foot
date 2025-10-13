@@ -1,5 +1,5 @@
 
-name: Fetch Groupe 2 Football
+name: Fetch Groupe 4 Football
 
 on:
   workflow_dispatch:
