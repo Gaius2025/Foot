@@ -244,7 +244,7 @@ console.log(`   ✅ ${matchesTomorrow.length} match(s) Top3 à domicile à venir
   if (matchesToSend.length) {
     console.log(`\n📤 Envoi au VPS... (${matchesToSend.length} match(es))`);
     const payload = {
-      groupe: '1',
+      groupe: '4',
       generatedAt: new Date().toISOString(),
       analysisDate: new Date().toISOString(),
       dateTarget: dateTomorrow,
