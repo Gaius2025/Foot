@@ -1,4 +1,4 @@
-// scripts/fetch_group1.js
+// scripts/fetch_group3.js
 // Analyse Group  : Top 3 à domicile + dernier match perdu → envoi au VPS
 // Usage : node scripts/fetch_group3.js
 // Variables d'env requises : VPS_WEBHOOK (obligatoire), SOFASCORE_COOKIE (optionnel)
