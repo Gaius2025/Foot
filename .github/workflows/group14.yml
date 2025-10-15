@@ -1,1 +1,34 @@
+name: Fetch Group 14 rugby
 
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *" # toutes les 6 heures
+
+jobs:
+  fetch_group14:
+    name: Run Group 14 rugby Script
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install --with-deps
+
+      - name: Run Group 1 Analysis Script
+        env:
+          VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
+          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
+        run: |
+          echo "🚀 Démarrage de l’analyse rugby du Groupe 1..."
+          node scripts/fetch_group14.js
+          echo "🏁 Fin du script Rugby Groupe 14."
