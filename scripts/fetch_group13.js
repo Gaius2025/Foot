@@ -1,6 +1,6 @@
 // scripts/fetch_group13.js
 // Analyse Group 13 Handball : Top 3 à domicile + dernier match perdu → envoi au VPS
-// Usage : node scripts/fetch_group1.js
+// Usage : node scripts/fetch_group13.js
 // Variables d'env requises : VPS_WEBHOOK (obligatoire), SOFASCORE_COOKIE (optionnel)
 
 const { chromium } = require('playwright');
