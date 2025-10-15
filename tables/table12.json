@@ -1,0 +1,118 @@
+
+{
+  "Finland": {
+    "leagues": [
+      { "name": "Liiga", "id": 134 },
+      { "name": "Mestis", "id": 259 },
+      { "name": "Auroraliiga", "id": 17023 },
+      { "name": "Suomi-sarja", "id": 20063 },
+      { "name": "U20 SM Sarja", "id": 28712 }
+    ]
+  },
+  "Denmark": {
+    "leagues": [
+      { "name": "Metal Ligaen", "id": 257 }
+    ]
+  },
+  "Belarus": {
+    "leagues": [
+      { "name": "Extraliga", "id": 1370 }
+    ]
+  },
+  "Austria": {
+    "leagues": [
+      { "name": "ICE Hockey League", "id": 256 },
+      { "name": "ICE Young Stars League", "id": 2062 }
+    ]
+  },
+  "Germany": {
+    "leagues": [
+      { "name": "DEL", "id": 225 },
+      { "name": "DEL 2", "id": 267 },
+      { "name": "Oberliga", "id": 20064 }
+    ]
+  },
+  "Switzerland": {
+    "leagues": [
+      { "name": "National League A", "id": 128 },
+      { "name": "Swiss League", "id": 129 },
+      { "name": "U21 Elit", "id": 28753 }
+    ]
+  },
+  "Slovakia": {
+    "leagues": [
+      { "name": "Extraliga", "id": 236 },
+      { "name": "SHL", "id": 1490 },
+      { "name": "2. SHL", "id": 29244 },
+      { "name": "U20 Extraliga Juniorov", "id": 28880 }
+    ]
+  },
+  "Czech Republic": {
+    "leagues": [
+      { "name": "Extraliga", "id": 237 },
+      { "name": "Maxa Liga", "id": 735 },
+      { "name": "2. Liga", "id": 28726 },
+      { "name": "U20 Extraliga Junioru", "id": 28754 }
+    ]
+  },
+  "USA": {
+    "leagues": [
+      { "name": "NHL", "id": 234 },
+      { "name": "NHL Preseason", "id": 957 },
+      { "name": "AHL", "id": 844 },
+      { "name": "ECHL", "id": 17188 },
+      { "name": "SPHL", "id": 16536 },
+      { "name": "NCAA Men", "id": 14285 },
+      { "name": "NCAA Division I National Championship", "id": 16743 },
+      { "name": "NCAA Women", "id": 14317 },
+      { "name": "Professional Women's Hockey League", "id": 21727 },
+      { "name": "AHL Preseason", "id": 23784 },
+      { "name": "FPHL", "id": 24110 }
+    ]
+  },
+  "Latvia": {
+    "leagues": [
+      { "name": "Latvian Hockey League", "id": 10532 }
+    ]
+  },
+  "France": {
+    "leagues": [
+      { "name": "Ligue Magnus", "id": 599 },
+      { "name": "Division 1", "id": 25486 }
+    ]
+  },
+  "Kazakhstan": {
+    "leagues": [
+      { "name": "Vysshaya League", "id": 14099 }
+    ]
+  },
+  "Sweden": {
+    "leagues": [
+      { "name": "SHL", "id": 261 },
+      { "name": "HockeyAllsvenskan", "id": 416 },
+      { "name": "HockeyEttan", "id": 714 },
+      { "name": "SDHL", "id": 1880 },
+      { "name": "U20 Nationell", "id": 24549 }
+    ]
+  },
+  "Poland": {
+    "leagues": [
+      { "name": "Ekstraliga", "id": 243 }
+    ]
+  },
+  "Norway": {
+    "leagues": [
+      { "name": "Elitehockeyligaen", "id": 260 },
+      { "name": "1st Division", "id": 828 },
+      { "name": "U20 Elite", "id": 28901 }
+    ]
+  },
+  "Russia": {
+    "leagues": [
+      { "name": "KHL", "id": 268 },
+      { "name": "MHL", "id": 1159 },
+      { "name": "VHL", "id": 1141 },
+      { "name": "WHL", "id": 18335 }
+    ]
+  }
+}
