@@ -6,7 +6,7 @@ on:
     - cron: "0 */6 * * *" # toutes les 6 heures
 
 jobs:
-  fetch_group1:
+  fetch_group11:
     name: Run Group 11 volley Script
     runs-on: ubuntu-latest
 
