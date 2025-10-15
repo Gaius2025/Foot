@@ -1,0 +1,42 @@
+// Volleyball
+{
+  "Greece": {
+    "leagues": [
+      { "name": "A1", "id": 603 },
+      { "name": "Pre League", "id": 21676 },
+      { "name": "A2", "id": 21767 },
+      { "name": "A1, Women", "id": 1219 },
+      { "name": "Pre League, Women", "id": 11510 },
+      { "name": "TE EOPE Dodekanisou", "id": 21585 },
+      { "name": "ESP Athens and East Attica", "id": 22045 },
+      { "name": "ESPEM U21", "id": 22921 },
+      { "name": "ESPE Dytikis Attikis", "id": 24072 },
+      { "name": "EPES Thessalonikis", "id": 26427 }
+    ]
+  },
+  "Turkey": {
+    "leagues": [
+      { "name": "Efeler Ligi", "id": 967 },
+      { "name": "Vodafone Sultans League", "id": 969 },
+      { "name": "1. Lig", "id": 29752 },
+      { "name": "1. Lig, Women", "id": 24053 },
+      { "name": "Erkekler 2. Ligi", "id": 30108 },
+      { "name": "Erkekler Voleybol 1.Ligi", "id": 24065 },
+      { "name": "Kadınlar 2. Ligi", "id": 30109 }
+    ]
+  },
+  "Russia": {
+    "leagues": [
+      { "name": "Superliga", "id": 845 },
+      { "name": "Superliga, Women", "id": 1486 },
+      { "name": "Vysshaya Liga A", "id": 29059 },
+      { "name": "Vysshaya Liga B", "id": 2358 }
+    ]
+  },
+  "Slovakia": {
+    "leagues": [
+      { "name": "Niké Extraliga", "id": 1406 },
+      { "name": "Niké Extraliga, Women", "id": 1408 }
+    ]
+  }
+}
