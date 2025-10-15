@@ -24,7 +24,7 @@ jobs:
           npm install
           npx playwright install --with-deps
 
-      - name: Run Group 1 Analysis Script
+      - name: Run Group 14 Analysis Script
         env:
           VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
           SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
