@@ -1,0 +1,75 @@
+
+{
+  "Sweden": {
+    "leagues": [
+      { "name": "Handbollsligan", "id": 161 },
+      { "name": "Allsvenskan", "id": 502 },
+      { "name": "Elitserien, Women", "id": 162 },
+      { "name": "Allsvenskan, Women", "id": 26278 },
+      { "name": "Division 1, Women", "id": 26492 }
+    ]
+  },
+  "Czech Republic": {
+    "leagues": [
+      { "name": "Niké Extraliga", "id": 814 },
+      { "name": "1. Liga, Women", "id": 26064 },
+      { "name": "2. Liga, Women", "id": 26128 }
+    ]
+  },
+  "Denmark": {
+    "leagues": [
+      { "name": "Handboldligaen", "id": 157 },
+      { "name": "Kvindeligaen", "id": 158 },
+      { "name": "1. Division", "id": 1416 },
+      { "name": "1. Division, Women", "id": 1418 }
+    ]
+  },
+  "Slovakia": {
+    "leagues": [
+      { "name": "Extraliga", "id": 1145 },
+      { "name": "1. Liga, Women", "id": 25924 }
+    ]
+  },
+  "Norway": {
+    "leagues": [
+      { "name": "REMA 1000-ligaen", "id": 221 },
+      { "name": "REMA 1000-ligaen, Women", "id": 223 },
+      { "name": "1. Divisjon", "id": 1420 },
+      { "name": "1. Divisjon, Women", "id": 1422 }
+    ]
+  },
+  "Spain": {
+    "leagues": [
+      { "name": "ASOBAL", "id": 248 },
+      { "name": "Division de Honor Plata", "id": 20084 },
+      { "name": "Primera Nacional", "id": 24894 },
+      { "name": "Segunda División Nacional - Andalucia", "id": 28713 },
+      { "name": "Segunda División Nacional - Euskadi", "id": 29263 },
+      { "name": "Division de Honor Feminina", "id": 1932 },
+      { "name": "Division De Honor Oro Femenina", "id": 24937 },
+      { "name": "Division De Honor Plata Femenina", "id": 25028 },
+      { "name": "Primera Territorial Guipuzcoa", "id": 29769 },
+      { "name": "Division de Honor Oro, Women", "id": 29239 },
+      { "name": "Segunda Territorial Guipuzcoa", "id": 29770 },
+      { "name": "Primera Nacional Femenina - Euskadi", "id": 29959 },
+      { "name": "Primera Territorial Guipuzcoa, Femenina", "id": 29975 },
+      { "name": "Segunda Territorial Guipuzcoa, Femenina", "id": 29976 }
+    ]
+  },
+  "Germany": {
+    "leagues": [
+      { "name": "Bundesliga", "id": 149 },
+      { "name": "2. HBL", "id": 921 },
+      { "name": "Women Bundesliga", "id": 245 },
+      { "name": "2. Bundesliga, Women", "id": 15265 }
+    ]
+  },
+  "Russia": {
+    "leagues": [
+      { "name": "Super League", "id": 1143 },
+      { "name": "Super League, Women", "id": 1394 },
+      { "name": "SEHA – Gazprom League", "id": 24901 },
+      { "name": "Vysshaya liga", "id": 24906 }
+    ]
+  }
+}
