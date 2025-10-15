@@ -1,1 +1,10 @@
+{
+  "France": {
+    "leagues": [
+      { "name": "France - Nationale", "id": 23604 },
+      { "name": "Classement Général Circuit Élite Sevens", "id": 27566 }
+    ]
+  }
+}
+
 
