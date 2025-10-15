@@ -1,0 +1,135 @@
+{
+  "Italy": {
+    "leagues": [
+      { "name": "Lega A Basket", "id": 262 },
+      { "name": "Serie A2", "id": 1520 },
+      { "name": "Serie B", "id": 14251 },
+      { "name": "Serie A1 Femminile", "id": 556 },
+      { "name": "Serie A2, Women", "id": 24062 }
+    ]
+  },
+  "Iceland": {
+    "leagues": [
+      { "name": "Iceland Basketball Premier League", "id": 9507 },
+      { "name": "Iceland Women's Basketball Premier League", "id": 9504 },
+      { "name": "1st Division Men", "id": 30073 },
+      { "name": "1st Division Women", "id": 29918 }
+    ]
+  },
+  "Spain": {
+    "leagues": [
+      { "name": "Liga ACB", "id": 264 },
+      { "name": "Primera FEB", "id": 1514 },
+      { "name": "Liga Femenina", "id": 1538 },
+      { "name": "Segunda FEB", "id": 24118 }
+    ]
+  },
+  "Paraguay": {
+    "leagues": [
+      { "name": "LNB", "id": 26299 },
+      { "name": "LNBF", "id": 29679 }
+    ]
+  },
+  "Nicaragua": {
+    "leagues": [
+      { "name": "LSB", "id": 23936 },
+      { "name": "LSBF", "id": 29919 }
+    ]
+  },
+  "Slovakia": {
+    "leagues": [
+      { "name": "Tipos SBL", "id": 1410 },
+      { "name": "Tipos Extraliga", "id": 1412 }
+    ]
+  },
+  "Uruguay": {
+    "leagues": [
+      { "name": "Uruguay LUB", "id": 10587 },
+      { "name": "LDA", "id": 13647 },
+      { "name": "Divisional Tercera de Ascenso", "id": 27754 },
+      { "name": "LFB, Women", "id": 26277 }
+    ]
+  },
+  "Australia": {
+    "leagues": [
+      { "name": "NBL", "id": 1524 },
+      { "name": "WNBL", "id": 1506 },
+      { "name": "Big V", "id": 3084 },
+      { "name": "Big V, Women", "id": 10267 },
+      { "name": "NBL1", "id": 13487 },
+      { "name": "NBL1, Central", "id": 16739 },
+      { "name": "NBL1, North", "id": 16818 },
+      { "name": "NBL1, East", "id": 18599 },
+      { "name": "NBL1, West", "id": 16740 },
+      { "name": "NBL1, South", "id": 16776 },
+      { "name": "NBL1, Wildcard", "id": 18601 },
+      { "name": "NBL1, Women", "id": 13488 },
+      { "name": "NBL1 Women, Central", "id": 16741 },
+      { "name": "NBL1 Women, North", "id": 16819 },
+      { "name": "NBL1 Women, East", "id": 18600 },
+      { "name": "NBL1 Women, West", "id": 16742 },
+      { "name": "NBL1 Women, South", "id": 16821 },
+      { "name": "NBL 1, Wildcard, Women", "id": 18552 }
+    ]
+  },
+  "Brazil": {
+    "leagues": [
+      { "name": "Brazil NBB", "id": 1562 },
+      { "name": "LBF, Women", "id": 19970 },
+      { "name": "NBB All Star", "id": 20067 },
+      { "name": "CBB", "id": 22218 },
+      { "name": "LDB", "id": 22587 },
+      { "name": "Brasileiro de Seleções Fem. U16", "id": 23962 },
+      { "name": "Brasileiro de Seleções U16", "id": 23961 },
+      { "name": "Campeonato Catarinense", "id": 23404 },
+      { "name": "Catarinense", "id": 28885 },
+      { "name": "Catarinense Feminino", "id": 23856 },
+      { "name": "Catarinense, Women", "id": 28898 },
+      { "name": "CBI U15", "id": 28704 },
+      { "name": "CBI U17", "id": 23955 },
+      { "name": "CBI U17 Feminino", "id": 23965 },
+      { "name": "CBI U19", "id": 23799 },
+      { "name": "CBI U20 Feminino", "id": 23964 },
+      { "name": "CBI U23 Feminino", "id": 23520 },
+      { "name": "Liga Ouro", "id": 25532 },
+      { "name": "LSB - Estadual Amador", "id": 25370 },
+      { "name": "LSB - Liga B", "id": 25371 },
+      { "name": "Paulista, 1ª Divisão", "id": 23647 },
+      { "name": "Paulista Divisao Especial A-1", "id": 28266 },
+      { "name": "Paulista Divisao Especial, Women", "id": 28272 },
+      { "name": "Paulista, Feminino", "id": 25674 },
+      { "name": "U22 Campeonato Carioca", "id": 27737 }
+    ]
+  },
+  "Azerbaijan": {
+    "leagues": [
+      { "name": "Azerbaijan Basketball League", "id": 24261 },
+      { "name": "Azerbaijan Basketball League U12", "id": 26258 },
+      { "name": "Youth Basketball League U12", "id": 26257 },
+      { "name": "Youth Basketball League U12 (W)", "id": 24795 },
+      { "name": "Youth Basketball League U14", "id": 24798 },
+      { "name": "Youth Basketball League U14 (W)", "id": 24797 },
+      { "name": "Youth Basketball League U16", "id": 24800 },
+      { "name": "Youth Basketball League U16 (W)", "id": 24799 }
+    ]
+  },
+  "Greece": {
+    "leagues": [
+      { "name": "Stoiximan GBL", "id": 304 },
+      { "name": "Elite League", "id": 10599 },
+      { "name": "National League 1", "id": 19769 },
+      { "name": "National League 2", "id": 21922 },
+      { "name": "Greek Women's Basketball League", "id": 9543 },
+      { "name": "A2 National, Women's Basketball League", "id": 28302 }
+    ]
+  },
+  "Germany": {
+    "leagues": [
+      { "name": "Germany BBL", "id": 227 },
+      { "name": "1. DBBL", "id": 251 },
+      { "name": "Germany Pro A", "id": 1165 },
+      { "name": "Bezirksoberliga Schwaben", "id": 22897 },
+      { "name": "Pro B", "id": 28273 }
+    ]
+  }
+}
