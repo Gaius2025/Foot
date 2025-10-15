@@ -1,49 +1,25 @@
 {
-  "Czech Republic": {
+  "Scotland": {
     "leagues": [
       {
-        "name": "Czech First League",
-        "id": 172
+        "name": "Scottish Premiership",
+        "id": 36
       },
       {
-        "name": "FNL",
-        "id": 205
+        "name": "Scottish Championship",
+        "id": 206
       },
       {
-        "name": "CFL",
-        "id": 9387
+        "name": "Scottish League One",
+        "id": 207
       },
       {
-        "name": "MSFL",
-        "id": 9386
+        "name": "Scottish League Two",
+        "id": 209
       },
       {
-        "name": "Czech Cup",
-        "id": 282
-      },
-      {
-        "name": "Super Cup",
-        "id": 798
-      }
-    ]
-  },
-  "Switzerland": {
-    "leagues": [
-      {
-        "name": "Swiss Super League",
-        "id": 215
-      },
-      {
-        "name": "Challenge League",
-        "id": 216
-      },
-      {
-        "name": "Promotion League",
-        "id": 1101
-      },
-      {
-        "name": "Schweizer Cup",
-        "id": 399
+        "name": "Scotland Reserve League",
+        "id": 11392
       }
     ]
   },
@@ -90,5 +66,81 @@
         "id": 395
       },
       {
-        "name": "Division 2, Västra Göt
-
+        "name": "Division 2, Västra Götaland",
+        "id": 73
+      },
+      {
+        "name": "Division 2, Södra Götaland",
+        "id": 72
+      }
+    ]
+  },
+  "Switzerland": {
+    "leagues": [
+      {
+        "name": "Swiss Super League",
+        "id": 215
+      },
+      {
+        "name": "Challenge League",
+        "id": 216
+      },
+      {
+        "name": "Promotion League",
+        "id": 1101
+      }
+    ]
+  },
+  "Czech Republic": {
+    "leagues": [
+      {
+        "name": "Czech First League",
+        "id": 172
+      },
+      {
+        "name": "FNL",
+        "id": 205
+      },
+      {
+        "name": "CFL",
+        "id": 9387
+      },
+      {
+        "name": "MSFL",
+        "id": 9386
+      },
+      {
+        "name": "Divize A",
+        "id": 20945
+      },
+      {
+        "name": "Divize B",
+        "id": 20946
+      },
+      {
+        "name": "Divize C",
+        "id": 20947
+      },
+      {
+        "name": "Divize D",
+        "id": 20948
+      },
+      {
+        "name": "Divize E",
+        "id": 20950
+      },
+      {
+        "name": "Divize F",
+        "id": 20949
+      },
+      {
+        "name": "Czech Women's First League",
+        "id": 823
+      },
+      {
+        "name": "Czech Women's Second League",
+        "id": 28168
+      }
+    ]
+  }
+}
