@@ -7,7 +7,7 @@
 const { chromium } = require('playwright');
 
 (async () => {
-  const SOFA_ENDPOINT = 'https://www.sofascore.com/api/v1/sport/basketball/categories/all';
+  const SOFA_ENDPOINT = 'https://www.sofascore.com/api/v1/sport/volleyball/categories/all';
   const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
   const COOKIE = process.env.SOFASCORE_COOKIE || '';
   const MAX_ATTEMPTS = 2;
