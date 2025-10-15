@@ -1,5 +1,5 @@
-// scripts/fetch_group3.js
-// Analyse Group  : Top 3 à domicile + dernier match perdu → envoi au VPS
+// scripts/fetch_group.js
+// Analyse Group 3 : Top 3 à domicile + dernier match perdu → envoi au VPS
 // Usage : node scripts/fetch_group3.js
 // Variables d'env requises : VPS_WEBHOOK (obligatoire), SOFASCORE_COOKIE (optionnel)
 
@@ -33,7 +33,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 // Main script
 // -----------------------------------------------------------------------------
 (async () => {
-  console.log('🚀 Démarrage du script Group 3...');
+  console.log('🚀 Démarrage du script Group 1...');
 
   // Lire la table
   let table;
@@ -244,7 +244,7 @@ console.log(`   ✅ ${matchesTomorrow.length} match(s) Top3 à domicile à venir
   if (matchesToSend.length) {
     console.log(`\n📤 Envoi au VPS... (${matchesToSend.length} match(es))`);
     const payload = {
-      groupe: '3',
+      groupe: '1',
       generatedAt: new Date().toISOString(),
       analysisDate: new Date().toISOString(),
       dateTarget: dateTomorrow,
