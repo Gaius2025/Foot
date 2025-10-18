@@ -37,7 +37,7 @@ async function isTop7(teamId, leagueId, seasonId, fetchJsonFn, label = '') {
   let rows = [];
   if (Array.isArray(standings.rows)) rows = standings.rows;
   else if (standings.standings?.[0]?.rows) rows = standings.standings[0].rows;
-  const top7Ids = rows.slice(0, 4).map(r => r.team?.id).filter(Boolean);
+  const top7Ids = rows.slice(0, 6).map(r => r.team?.id).filter(Boolean);
   return top7Ids.includes(teamId);
 }
 
