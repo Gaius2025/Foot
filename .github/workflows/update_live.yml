@@ -1,25 +1,25 @@
-name: Update Live Matches
+name: 🕓 Mise à jour des matchs live
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # toutes les 15 min
+    - cron: "*/30 * * * *"  # toutes les 30 minutes
   workflow_dispatch:
 
 jobs:
   update-live:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 🧰 Checkout du code
+      - name: 🧾 Checkout du dépôt
         uses: actions/checkout@v4
 
-      - name: ⚙️ Installer Node.js
+      - name: ⚙️ Installer Node.js et Playwright
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
+      - run: npm install playwright
 
-      - name: 📦 Installer les dépendances
-        run: npm install axios
-
-      - name: 🚀 Mettre à jour les scores live
+      - name: 🚀 Lancer la mise à jour des matchs
+        env:
+          VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
+          GROUP_FILE: "groupes_json/championnats_groupe_1.json"
         run: node scripts/update_live.js
