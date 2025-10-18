@@ -1,17 +1,17 @@
 // scripts/update_live.js
 // Playwright script -> récupère les scores live par match Sofascore et poste les données au VPS2
-// Compatible Node 20, CommonJS (utilise Playwright page.request pour POST au VPS)
+// Compatible Node 20, CommonJS
 
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const VPS_WEBHOOK = process.env.VPS_WEBHOOK2; // Utilise le secret correct
+const VPS_WEBHOOK = process.env.VPS_WEBHOOK2; // secret GitHub Actions
 const COOKIE = process.env.SOFASCORE_COOKIE || '';
 const MAX_ATTEMPTS = 2;
 const NAV_TIMEOUT = 15000;
 
-// Chemin des fichiers historiques (ajuste si nécessaire)
+// Chemin des fichiers historiques
 const BASE_DIR = path.join(__dirname, '..', 'public_html', 'sofascore-ingest', 'historique');
 
 if (!VPS_WEBHOOK) {
@@ -22,7 +22,7 @@ if (!VPS_WEBHOOK) {
 (async () => {
   console.log("🚀 Démarrage du script de mise à jour des scores live...");
 
-  // Assure l'existence du dossier historique (prévenir ENOENT)
+  // Assure l'existence du dossier historique
   try {
     if (!fs.existsSync(BASE_DIR)) {
       console.log("📂 Dossier historique introuvable, création de :", BASE_DIR);
@@ -66,7 +66,7 @@ if (!VPS_WEBHOOK) {
 
     const page = await context.newPage();
 
-    // Récupère la liste des "groupe*" présents (dossiers)
+    // Récupère la liste des dossiers "groupe*"
     let groupes = [];
     try {
       const items = fs.readdirSync(BASE_DIR, { withFileTypes: true });
@@ -82,11 +82,10 @@ if (!VPS_WEBHOOK) {
       const groupeDir = path.join(BASE_DIR, groupe);
       console.log(`\n--- Traitement du ${groupe} (${groupeDir}) ---`);
 
-      // lister fichiers .json (tri par date/mtime)
+      // lister fichiers .json
       let fichiers;
       try {
         fichiers = fs.readdirSync(groupeDir).filter(f => f.toLowerCase().endsWith('.json'));
-        // trier par mtime croissant (option) ou laisser tel quel ; on garde tri par mtime asc
         fichiers.sort((a, b) => fs.statSync(path.join(groupeDir, a)).mtimeMs - fs.statSync(path.join(groupeDir, b)).mtimeMs);
         console.log(`🔎 ${fichiers.length} fichier(s) JSON trouvés dans ${groupeDir}`);
       } catch (err) {
@@ -114,65 +113,56 @@ if (!VPS_WEBHOOK) {
 
         console.log(`  🔁 ${matches.length} match(es) à vérifier dans ${fichier}`);
 
-        // Pour chaque match, récupérer l'event via l'API sofascore (event id)
         for (const matchEntry of matches) {
           const matchId = matchEntry.match?.matchId || matchEntry.matchId || null;
+          const status = matchEntry.liveStatus || matchEntry.status || null;
+
+          // Ne traiter que si pas de statut ou match en live / à venir
+          if (status && !['NOT_STARTED', 'IN_PROGRESS', null].includes(status)) {
+            continue;
+          }
+
           if (!matchId) {
-            console.warn("    ⚠️ Aucun matchId trouvé dans l'entrée, on saute.");
+            console.warn("    ⚠️ Aucun matchId trouvé, on saute.");
             continue;
           }
 
           const apiUrl = `https://api.sofascore.com/api/v1/event/${matchId}`;
-          console.log(`    ↳ Récupération event ${matchId} → ${apiUrl}`);
+          console.log(`    ↳ Récupération event ${matchId}`);
 
           let finalData = null;
           for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
-              // Utilisation de page.goto pour se comporter comme les autres scripts, puis response.json
               const resp = await page.goto(apiUrl, { waitUntil: 'networkidle', timeout: NAV_TIMEOUT });
               if (!resp) throw new Error('no response');
               if (resp.status() >= 400) throw new Error(`HTTP ${resp.status()}`);
               const txt = await resp.text();
-              try {
-                finalData = JSON.parse(txt);
-              } catch (e) {
-                // fallback: try resp.json() (rare)
-                try { finalData = await resp.json(); } catch (e2) { throw e; }
-              }
+              try { finalData = JSON.parse(txt); } catch { try { finalData = await resp.json(); } catch {} }
               break;
             } catch (err) {
-              console.warn(`      ⚠️ tentative ${attempt}/${MAX_ATTEMPTS} échouée pour ${apiUrl} → ${err.message}`);
+              console.warn(`      ⚠️ tentative ${attempt}/${MAX_ATTEMPTS} échouée pour ${matchId} → ${err.message}`);
               if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 600));
             }
           }
 
           if (!finalData) {
-            console.warn(`    ⛔ Impossible d'obtenir l'event ${matchId} après ${MAX_ATTEMPTS} tentatives. On continue.`);
+            console.warn(`    ⛔ Impossible d'obtenir l'event ${matchId}`);
             continue;
           }
 
-          // Extraction robuste des données d'event (selon structure sofascore)
+          // Extraction des scores et statut
           const eventObj = finalData.event || finalData;
-          // Exemple : eventObj.homeScore.current / eventObj.awayScore.current ou eventObj.homeScore / awayScore simples
           const homeScore = (eventObj.homeScore && (eventObj.homeScore.current ?? eventObj.homeScore)) ?? null;
           const awayScore = (eventObj.awayScore && (eventObj.awayScore.current ?? eventObj.awayScore)) ?? null;
-          const status = eventObj.status ?? eventObj.status?.type ?? null;
+          const liveStatus = eventObj.status ?? eventObj.status?.type ?? null;
 
-          // Implémentation : ajouter ou mettre à jour champs dans matchEntry
+          // Mise à jour du fichier
           matchEntry.liveScore = (Number.isFinite(homeScore) && Number.isFinite(awayScore)) ? `${homeScore} - ${awayScore}` : null;
-          matchEntry.liveStatus = status ?? (eventObj.status?.description || null);
+          matchEntry.liveStatus = liveStatus ?? (eventObj.status?.description || null);
           matchEntry._eventFetchedAt = new Date().toISOString();
 
-          // Envoi de l'event complet (ou d'un subset) au VPS via Playwright request
-          const sendBody = {
-            source: 'live_match',
-            matchId,
-            groupe,
-            fichier,
-            timestamp: Date.now(),
-            event: eventObj
-          };
-
+          // Envoi au VPS
+          const sendBody = { source: 'live_match', matchId, groupe, fichier, timestamp: Date.now(), event: eventObj };
           try {
             const postResp = await page.request.post(VPS_WEBHOOK, {
               headers: { 'Content-Type': 'application/json' },
@@ -190,16 +180,14 @@ if (!VPS_WEBHOOK) {
           }
         } // end matches loop
 
-        // Écriture sécurisée du payload mis à jour (backup)
+        // Sauvegarde du fichier mis à jour
         try {
           const backupPath = filePath + '.bak';
-          // sauvegarder l'ancien
           fs.copyFileSync(filePath, backupPath);
-          // écrire le nouveau
           fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8');
-          console.log(`  💾 Fichier mis à jour (avec scores): ${filePath} (backup créé ${path.basename(backupPath)})`);
+          console.log(`  💾 Fichier mis à jour (backup créé: ${path.basename(backupPath)})`);
         } catch (err) {
-          console.error("  ⚠️ Échec écriture fichier mis à jour :", err.message);
+          console.error("  ⚠️ Échec écriture fichier :", err.message);
         }
       } // end fichiers loop
     } // end groupes loop
