@@ -1,28 +1,37 @@
-name: Update Live Scores
+name: ⚽ Update Live Scores
 
 on:
+  workflow_dispatch:  # déclenchement manuel
   schedule:
-    - cron: "*/15 * * * *"   # toutes les 15 min
-  workflow_dispatch:
+    - cron: "*/10 * * * *"  # toutes les 10 minutes
 
 jobs:
   update-live:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout du code
+      - name: 📦 Checkout repo
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: 📦 Installer Playwright et dépendances
-        run: |
-          npm install playwright axios
+      - name: 📥 Install dependencies
+        run: npm install
 
-      - name: 🚀 Mise à jour des scores live
+      - name: 🧩 Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: 💾 Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      - name: ⚽ Run update_live.js
         env:
-          VPS_WEBHOOK: https://srv945262.hstgr.cloud/sofascore-ingest/update_live.php
+          VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
+          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
         run: node scripts/update_live.js
