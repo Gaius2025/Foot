@@ -1,0 +1,25 @@
+name: Update Live Matches
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # toutes les 15 min
+  workflow_dispatch:
+
+jobs:
+  update-live:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧰 Checkout du code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 📦 Installer les dépendances
+        run: npm install axios
+
+      - name: 🚀 Mettre à jour les scores live
+        run: node scripts/update_live.js
