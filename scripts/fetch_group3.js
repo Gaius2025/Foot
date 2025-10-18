@@ -204,7 +204,7 @@ async function isTop7(teamId, leagueId, seasonId, fetchJsonFn, label = '') {
       console.log(`   ✅ ${matchesTomorrow.length} match(s) Top3 à domicile à venir pour demain.`);
 
       // ───────────────────────────────────────────────
-      // ÉTAPE 4 → Vérifier dernier match + filtrage adversaire top7
+      // ÉTAPE 4 → Vérifier dernier match + filtrage adversaire top6
       // ───────────────────────────────────────────────
       for (const m of matchesTomorrow) {
         const home = m.homeTeam;
@@ -239,11 +239,11 @@ async function isTop7(teamId, leagueId, seasonId, fetchJsonFn, label = '') {
 
         const isAwayTop7 = await isTop7(away.id, leagueId, seasonId, fetchJson, `away-${away.id}`);
         if (isAwayTop7) {
-          console.log(`       ⛔ Adversaire ${away.name} est dans le top7 → match ignoré.`);
+          console.log(`       ⛔ Adversaire ${away.name} est dans le top → match ignoré.`);
           continue;
         }
 
-        console.log('       ✅ Match valide après vérification top7 adversaire.');
+        console.log('       ✅ Match valide après vérification top6 adversaire.');
         matchesToSend.push({
           country,
           league: leagueName,
