@@ -181,24 +181,35 @@ async function isTop7(teamId, leagueId, seasonId, fetchJsonFn, label = '') {
       if (!top3.length) continue;  
       const top3Ids = new Set(top3.map(t => t.id));
 // ───────────────────────────────────────────────
-      // ÉTAPE 3 → Matchs où Top 3 joue à domicile ET pas encore commencé
-      // ───────────────────────────────────────────────
-      const matchesTomorrow = scheduled.events
-        .filter(e => e.homeTeam && top3Ids.has(e.homeTeam.id))
-        .filter(e => e.status?.type === "notstarted") // ← filtrer uniquement les matchs à venir
-        .filter(e => {
-          // Filtrage par date exacte GMT+1
-          const matchDate = new Date(e.startTimestamp);
-          const gmt1Date = new Date(matchDate.getTime() + 3600000); // +1h pour GMT+1
-          const isoDate = `${gmt1Date.getFullYear()}-${String(gmt1Date.getMonth()+1).padStart(2,'0')}-${String(gmt1Date.getDate()).padStart(2,'0')}`;
-          return isoDate === dateTomorrow;
-        });
+// Étape 3 → Matchs où Top 3 joue à domicile
+// ───────────────────────────────────────────────
+console.log('\n🔹 Analyse des matchs Top 3 à domicile...');
 
-      if (!matchesTomorrow.length) {
-        console.log('   Aucun match valide où un Top 3 joue à domicile et qui n\'a pas encore commencé demain GMT+1.');
-        continue;
-      }
-      console.log(`   ✅ ${matchesTomorrow.length} match(s) Top3 à domicile à venir pour demain.`);
+const matchesTop3Home = scheduled.events
+  .filter(e => e.homeTeam && top3Ids.has(e.homeTeam.id));
+
+if (!matchesTop3Home.length) {
+  console.log('   ⚠️ Aucun match où un Top 3 joue à domicile trouvé.');
+} else {
+  console.log(`   ✅ ${matchesTop3Home.length} match(s) trouvé(s) où un Top 3 joue à domicile :`);
+  for (const m of matchesTop3Home) {
+    const home = m.homeTeam;
+    const away = m.awayTeam;
+
+    // Calcul date GMT+1
+    const matchDate = new Date(m.startTimestamp);
+    const gmt1Date = new Date(matchDate.getTime() + 3600000); // +1h
+    const isoGmt1 = `${gmt1Date.getFullYear()}-${String(gmt1Date.getMonth()+1).padStart(2,'0')}-${String(gmt1Date.getDate()).padStart(2,'0')}`;
+    const timeStr = `${String(gmt1Date.getHours()).padStart(2,'0')}:${String(gmt1Date.getMinutes()).padStart(2,'0')}`;
+
+    console.log(`      🔹 Match : ${home.name} (home) vs ${away.name}`);
+    console.log(`         Date GMT+1 : ${isoGmt1} à ${timeStr}`);
+    console.log(`         Statut : ${m.status?.type || 'inconnu'}`);
+    console.log(`         Correspond à demain ? : ${isoGmt1 === dateTomorrow ? '✅ Oui' : '❌ Non'}`);
+  }
+}
+
+console.log('\n🔹 Fin affichage matchs Top 3 à domicile avant filtrage date GMT+1.');
 
       // ───────────────────────────────────────────────
       // ÉTAPE 4 → Vérifier dernier match (dans même tournoi) + filtrage adversaire top7
