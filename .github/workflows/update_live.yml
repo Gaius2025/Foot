@@ -1,7 +1,7 @@
-name: ⚡ Update Live Scores
+name: ⚡ Update Live Scores (VPS2)
 
 on:
-  workflow_dispatch:  # lancement manuel
+  workflow_dispatch:
   schedule:
     - cron: "*/10 * * * *"  # toutes les 10 minutes
 
@@ -32,6 +32,6 @@ jobs:
 
       - name: ⚽ Run update_live.js
         env:
-          VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
+          VPS_WEBHOOK2: ${{ secrets.VPS_WEBHOOK2 }}
           SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
         run: node scripts/update_live.js
