@@ -1,25 +1,28 @@
-name: 🕓 Mise à jour des matchs live
+name: Update Live Scores
 
 on:
   schedule:
-    - cron: "*/30 * * * *"  # toutes les 30 minutes
+    - cron: "*/15 * * * *"   # toutes les 15 min
   workflow_dispatch:
 
 jobs:
   update-live:
     runs-on: ubuntu-latest
+
     steps:
-      - name: 🧾 Checkout du dépôt
+      - name: 📥 Checkout du code
         uses: actions/checkout@v4
 
-      - name: ⚙️ Installer Node.js et Playwright
+      - name: ⚙️ Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-      - run: npm install playwright
+          node-version: 20
 
-      - name: 🚀 Lancer la mise à jour des matchs
+      - name: 📦 Installer Playwright et dépendances
+        run: |
+          npm install playwright axios
+
+      - name: 🚀 Mise à jour des scores live
         env:
-          VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
-          GROUP_FILE: "groupes_json/championnats_groupe_1.json"
+          VPS_WEBHOOK: https://srv945262.hstgr.cloud/sofascore-ingest/update_live.php
         run: node scripts/update_live.js
