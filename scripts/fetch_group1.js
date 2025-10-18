@@ -169,20 +169,19 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
       if (!top3.length) continue;
       const top3Ids = new Set(top3.map(t => t.id));
 
-// ───────────────────────────────────────────────
-// ÉTAPE 3 → Matchs où Top 3 joue à domicile ET pas encore commencé
-// ───────────────────────────────────────────────
-const matchesTomorrow = scheduled.events
-  .filter(e => e.homeTeam && top3Ids.has(e.homeTeam.id))
-  .filter(e => e.status?.type === "notstarted"); // ← filtrer uniquement les matchs à venir
+      // ───────────────────────────────────────────────
+      // ÉTAPE 3 → Matchs où Top 3 joue à domicile ET pas encore commencé
+      // ───────────────────────────────────────────────
+      const matchesTomorrow = scheduled.events
+        .filter(e => e.homeTeam && top3Ids.has(e.homeTeam.id))
+        .filter(e => e.status?.type === "notstarted"); // ← filtrer uniquement les matchs à venir
 
-if (!matchesTomorrow.length) {
-  console.log('   Aucun match où un Top 3 joue à domicile et qui n\'a pas encore commencé.');
-  continue;
-}
-console.log(`   ✅ ${matchesTomorrow.length} match(s) Top3 à domicile à venir.`);
+      if (!matchesTomorrow.length) {
+        console.log('   Aucun match où un Top 3 joue à domicile et qui n\'a pas encore commencé.');
+        continue;
+      }
+      console.log(`   ✅ ${matchesTomorrow.length} match(s) Top3 à domicile à venir.`);
 
-      
       // ───────────────────────────────────────────────
       // ÉTAPE 4 → Vérifier dernier match (dans même tournoi)
       // ───────────────────────────────────────────────
@@ -226,6 +225,7 @@ console.log(`   ✅ ${matchesTomorrow.length} match(s) Top3 à domicile à venir
               matchId: m.id,
               slug: m.slug,
               startTimestamp: m.startTimestamp,
+              status: m.status?.type || null, // ✅ Ajout du statut du match ici
               homeTeam: { id: home.id, name: home.name },
               awayTeam: { id: away.id, name: away.name }
             },
