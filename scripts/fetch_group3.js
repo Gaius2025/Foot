@@ -188,7 +188,8 @@ async function isTop7(teamId, leagueId, seasonId, fetchJsonFn, label = '') {
         .filter(e => e.homeTeam && top3Ids.has(e.homeTeam.id))
         .filter(e => e.status?.type === "notstarted") // uniquement matchs à venir
         .filter(e => {
-          const matchDate = new Date(e.startTimestamp);
+          // 🔹 CORRECTION : multiplier par 1000
+          const matchDate = new Date(e.startTimestamp * 1000); 
           const gmt1Date = new Date(matchDate.getTime() + 3600000); // +1h GMT+1
           const isoDate = `${gmt1Date.getFullYear()}-${String(gmt1Date.getMonth()+1).padStart(2,'0')}-${String(gmt1Date.getDate()).padStart(2,'0')}`;
           console.log(`       🔹 Match : ${e.homeTeam.name} vs ${e.awayTeam.name} | Date GMT+1 : ${gmt1Date.toISOString().slice(0,10)}`);
@@ -196,7 +197,7 @@ async function isTop7(teamId, leagueId, seasonId, fetchJsonFn, label = '') {
           return isoDate === dateTomorrow;
         });
 
-      if (!matchesTomorrow.length) {
+    if (!matchesTomorrow.length) {
         console.log('   Aucun match valide où un Top 3 joue à domicile et qui n\'a pas encore commencé demain GMT+1.');
         continue;
       }
@@ -295,5 +296,5 @@ async function isTop7(teamId, leagueId, seasonId, fetchJsonFn, label = '') {
   }
 
   await browser.close();
-  console.log('\n🏁 Fin du script Group 1.');
+  console.log('\n🏁 Fin du script Group 3.');
 })();
