@@ -1,132 +1,208 @@
 // scripts/update_live.js
-// Playwright/Node.js script pour mettre à jour le statut et le score des matchs depuis Sofascore
-// Compatible environnement GitHub Actions / Node 18+
-// Aucune dépendance ESM — fonctionne tel quel
+// Compatible Node18+/CommonJS (aucun import ES)
+// Exécute via GitHub Actions et envoie les mises à jour live au VPS
 
-const { chromium } = require("playwright");
-const fs = require("fs");
+const { chromium } = require('playwright');
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
+const BASE_API = "https://api.sofascore.com/api/v1/event";
+const GROUPES_DIR = "sofascore-ingest/groupes_json";
 
 (async () => {
-  console.log("🚀 Démarrage du script de mise à jour des matchs live...");
-
-  // === CONFIGURATION ===
-  const VPS_WEBHOOK = process.env.VPS_WEBHOOK; // URL côté VPS (ex: https://tonsite.com/sofascore-ingest/update_live.php)
-  const GROUP_FILE = process.env.GROUP_FILE || "groupes_json/championnats_groupe_1.json"; // chemin du fichier JSON local
-  const MAX_ATTEMPTS = 2;
-  const UA =
-    "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36";
+  console.log("🚀 Démarrage de la mise à jour live Sofascore...");
 
   if (!VPS_WEBHOOK) {
-    console.error("❌ Erreur : variable VPS_WEBHOOK non définie !");
-    process.exit(2);
+    console.error("❌ Erreur : VPS_WEBHOOK non défini dans les variables d’environnement !");
+    process.exit(1);
   }
 
-  if (!fs.existsSync(GROUP_FILE)) {
-    console.error("❌ Fichier introuvable :", GROUP_FILE);
-    process.exit(3);
-  }
-
-  const data = JSON.parse(fs.readFileSync(GROUP_FILE, "utf8"));
-  const matches = data.matches || [];
-
-  if (!matches.length) {
-    console.log("⚠️ Aucun match trouvé dans", GROUP_FILE);
-    process.exit(0);
-  }
-
-  const browser = await chromium.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox"] });
-  const context = await browser.newContext({ userAgent: UA });
+  const browser = await chromium.launch({ args: ['--no-sandbox'] });
+  const context = await browser.newContext();
   const page = await context.newPage();
 
-  console.log(`📋 Nombre de matchs à mettre à jour : ${matches.length}`);
+  const groupes = fs.readdirSync(GROUPES_DIR)
+    .filter(f => f.match(/^championnats_groupe_\d+\.json$/));
 
-  const updatedMatches = [];
+  for (const file of groupes) {
+    const groupe = file.match(/(\d+)/)[1];
+    const fullPath = path.join(GROUPES_DIR, file);
+    console.log(`📂 Lecture du groupe ${groupe} -> ${fullPath}`);
 
-  for (const match of matches) {
-    const matchId = match.match?.matchId;
-    if (!matchId) continue;
+    const json = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    const matches = json.matches || [];
+    const updatedMatches = [];
 
-    let liveData = null;
+    for (const m of matches) {
+      const matchId = m.match?.matchId;
+      if (!matchId) continue;
 
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const url = `${BASE_API}/${matchId}`;
       try {
-        const resp = await page.goto(`https://api.sofascore.com/api/v1/event/${matchId}`, {
-          timeout: 20000,
-          waitUntil: "networkidle",
+        const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        if (!resp) continue;
+
+        const status = resp.status();
+        if (status !== 200) {
+          console.warn(`⚠️ ${matchId}: HTTP ${status}`);
+          continue;
+        }
+
+        const text = await resp.text();
+        let data;
+        try { data = JSON.parse(text); } catch { continue; }
+
+        const ev = data.event;
+        if (!ev) continue;
+
+        const live = {
+          status: ev.status?.type || "unknown",
+          homeScore: ev.homeScore?.current ?? null,
+          awayScore: ev.awayScore?.current ?? null
+        };
+
+        let result = "pending";
+        if (live.status === "finished") {
+          result = (live.homeScore > live.awayScore) ? "homeWin" : "lost";
+        }
+
+        updatedMatches.push({
+          ...m,
+          live,
+          result
         });
 
-        if (resp && resp.status() === 200) {
-          const json = await resp.json();
-          liveData = json.event;
-          break;
-        }
+        console.log(`✅ Match ${matchId} -> ${live.status} (${live.homeScore}-${live.awayScore})`);
       } catch (err) {
-        console.log(`⚠️ Tentative ${attempt} échouée pour match ${matchId}:`, err.message);
-        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000));
+        console.error(`❌ Erreur match ${matchId}:`, err.message);
       }
+
+      // Attendre un peu entre chaque requête pour éviter le blocage
+      await new Promise(r => setTimeout(r, 800));
     }
 
-    if (!liveData) {
-      console.log(`⛔ Données introuvables pour le match ${matchId}`);
-      continue;
+    const payload = {
+      groupe,
+      updatedAt: new Date().toISOString(),
+      matches: updatedMatches
+    };
+
+    try {
+      const res = await axios.post(VPS_WEBHOOK, payload, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      console.log(`📤 Groupe ${groupe} envoyé (${res.status})`);
+    } catch (err) {
+      console.error(`⛔ Erreur envoi groupe ${groupe}:`, err.message);
     }
-
-    // Analyse des infos live
-    const status = liveData.status?.type || "unknown";
-    const homeScore = liveData.homeScore?.current || 0;
-    const awayScore = liveData.awayScore?.current || 0;
-
-    let winner = "pending";
-    if (status === "finished") {
-      winner = homeScore > awayScore ? "homeWin" : homeScore < awayScore ? "awayWin" : "draw";
-    }
-
-    updatedMatches.push({
-      matchId,
-      status,
-      homeScore,
-      awayScore,
-      winner,
-      startTimestamp: liveData.startTimestamp,
-      homeTeam: liveData.homeTeam?.name,
-      awayTeam: liveData.awayTeam?.name,
-    });
-
-    console.log(`✅ Match ${matchId}: ${status} (${homeScore}-${awayScore})`);
   }
 
   await browser.close();
+  console.log("🏁 Fin du script update_live.js");
+})();
+// scripts/update_live.js
+// Compatible Node18+/CommonJS (aucun import ES)
+// Exécute via GitHub Actions et envoie les mises à jour live au VPS
 
-  if (!updatedMatches.length) {
-    console.log("⚠️ Aucun match mis à jour.");
-    process.exit(0);
+const { chromium } = require('playwright');
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
+const BASE_API = "https://api.sofascore.com/api/v1/event";
+const GROUPES_DIR = "sofascore-ingest/groupes_json";
+
+(async () => {
+  console.log("🚀 Démarrage de la mise à jour live Sofascore...");
+
+  if (!VPS_WEBHOOK) {
+    console.error("❌ Erreur : VPS_WEBHOOK non défini dans les variables d’environnement !");
+    process.exit(1);
   }
 
-  console.log("📡 Envoi des résultats au VPS...");
-  const payload = {
-    source: "sofascore_live_update",
-    timestamp: Date.now(),
-    groupFile: GROUP_FILE,
-    matches: updatedMatches,
-  };
+  const browser = await chromium.launch({ args: ['--no-sandbox'] });
+  const context = await browser.newContext();
+  const page = await context.newPage();
 
-  const resp = await sendToVPS(VPS_WEBHOOK, payload);
-  if (resp.ok) console.log("✅ Données live envoyées avec succès au VPS !");
-  else console.error("❌ Échec de l’envoi au VPS :", resp);
+  const groupes = fs.readdirSync(GROUPES_DIR)
+    .filter(f => f.match(/^championnats_groupe_\d+\.json$/));
 
-  console.log("🏁 Fin du script.");
+  for (const file of groupes) {
+    const groupe = file.match(/(\d+)/)[1];
+    const fullPath = path.join(GROUPES_DIR, file);
+    console.log(`📂 Lecture du groupe ${groupe} -> ${fullPath}`);
 
-  async function sendToVPS(url, body) {
+    const json = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    const matches = json.matches || [];
+    const updatedMatches = [];
+
+    for (const m of matches) {
+      const matchId = m.match?.matchId;
+      if (!matchId) continue;
+
+      const url = `${BASE_API}/${matchId}`;
+      try {
+        const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        if (!resp) continue;
+
+        const status = resp.status();
+        if (status !== 200) {
+          console.warn(`⚠️ ${matchId}: HTTP ${status}`);
+          continue;
+        }
+
+        const text = await resp.text();
+        let data;
+        try { data = JSON.parse(text); } catch { continue; }
+
+        const ev = data.event;
+        if (!ev) continue;
+
+        const live = {
+          status: ev.status?.type || "unknown",
+          homeScore: ev.homeScore?.current ?? null,
+          awayScore: ev.awayScore?.current ?? null
+        };
+
+        let result = "pending";
+        if (live.status === "finished") {
+          result = (live.homeScore > live.awayScore) ? "homeWin" : "lost";
+        }
+
+        updatedMatches.push({
+          ...m,
+          live,
+          result
+        });
+
+        console.log(`✅ Match ${matchId} -> ${live.status} (${live.homeScore}-${live.awayScore})`);
+      } catch (err) {
+        console.error(`❌ Erreur match ${matchId}:`, err.message);
+      }
+
+      // Attendre un peu entre chaque requête pour éviter le blocage
+      await new Promise(r => setTimeout(r, 800));
+    }
+
+    const payload = {
+      groupe,
+      updatedAt: new Date().toISOString(),
+      matches: updatedMatches
+    };
+
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      const res = await axios.post(VPS_WEBHOOK, payload, {
+        headers: { 'Content-Type': 'application/json' }
       });
-      const text = await res.text().catch(() => "");
-      return { ok: res.ok, status: res.status, text };
+      console.log(`📤 Groupe ${groupe} envoyé (${res.status})`);
     } catch (err) {
-      return { ok: false, error: err.message };
+      console.error(`⛔ Erreur envoi groupe ${groupe}:`, err.message);
     }
   }
+
+  await browser.close();
+  console.log("🏁 Fin du script update_live.js");
 })();
