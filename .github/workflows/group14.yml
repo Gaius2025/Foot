@@ -3,7 +3,7 @@ name: Fetch Group 14 rugby
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */9 * * *" # toutes les 6 heures
+    - cron: "0 */14 * * *" # toutes les 6 heures
 
 jobs:
   fetch_group14:
