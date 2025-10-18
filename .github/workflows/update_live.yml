@@ -1,7 +1,7 @@
-name: ⚽ Update Live Scores
+name: ⚡ Update Live Scores
 
 on:
-  workflow_dispatch:  # déclenchement manuel
+  workflow_dispatch:  # lancement manuel
   schedule:
     - cron: "*/10 * * * *"  # toutes les 10 minutes
 
@@ -20,10 +20,9 @@ jobs:
 
       - name: 📥 Install dependencies
         run: |
-          npm install playwright node-fetch
-
-      - name: 🧩 Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+          npm install
+          npm install node-fetch
+          npx playwright install --with-deps chromium
 
       - name: 💾 Cache Playwright browsers
         uses: actions/cache@v4
