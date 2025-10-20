@@ -1,14 +1,14 @@
-name: Fetch Group 10 Basketball
+name: Fetch Group 10 basket
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */8 * * *" # toutes les 6 heures
+    - cron: "0 */10 * * *" # toutes les 10 heures
 
 jobs:
   fetch_group10:
-    name: Run Group 10 basket Script
-    runs-on: ubuntu-latest
+    name: Run Group 10 Script
+    runs-on: self-hosted  # Self-hosted runner sur ton VPS
 
     steps:
       - name: Checkout repository
@@ -22,13 +22,17 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          npx playwright install --with-deps
+          # Installer uniquement les navigateurs Playwright sans apt-get
+          npx playwright install chromium
+          npx playwright install firefox
+          npx playwright install webkit
 
-      - name: Run Group 10 basket Analysis Script
+      - name: Run Group 1 Analysis Script
         env:
           VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
-          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
+          # Laisse SOFASCORE_COOKIE vide si tu n’as pas de cookies
+          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE || '' }}
         run: |
-          echo "🚀 Démarrage de l’analyse du Groupe 10 basket..."
+          echo "🚀 Démarrage de l’analyse du Groupe 1..."
           node scripts/fetch_group10.js
-          echo "🏁 Fin du script Groupe 10 basket."
+          echo "🏁 Fin du script Groupe 1.”
