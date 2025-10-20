@@ -4,7 +4,7 @@ name: Fetch Groupe 4 Football
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */17 * * *" # toutes les 6 heures
+    - cron: "30 */13 * * *" # toutes les 6 heures
 
 jobs:
   fetch_group4:
