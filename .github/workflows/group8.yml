@@ -1,14 +1,14 @@
-name: Fetch Groupe 8 Football
+name: Fetch Group 1 Football
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */17 * * *" # toutes les 6 heures
+    - cron: "15 */10 * * *" # toutes les 10 heures
 
 jobs:
   fetch_group8:
-    name: Run Group 8 Script
-    runs-on: ubuntu-latest
+    name: Run Group 1 Script
+    runs-on: self-hosted  # Self-hosted runner sur ton VPS
 
     steps:
       - name: Checkout repository
@@ -22,13 +22,16 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          npx playwright install --with-deps
+          # Installer les navigateurs Playwright sans apt-get
+          npx playwright install chromium
+          npx playwright install firefox
+          npx playwright install webkit
 
       - name: Run Group 1 Analysis Script
         env:
           VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
-          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
+          
         run: |
-          echo "🚀 Démarrage de l’analyse du Groupe 8..."
+          echo "Demarrage de l'analyse du Groupe 1..."
           node scripts/fetch_group8.js
-          echo "🏁 Fin du script Groupe 8."
+          echo "Fin du script Groupe 1."
