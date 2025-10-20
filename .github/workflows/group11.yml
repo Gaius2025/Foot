@@ -3,7 +3,7 @@ name: Fetch Group 11 volley
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */10 * * *" # toutes les 10 heures
+    - cron: "0 */11 * * *" # toutes les 10 heures
 
 jobs:
   fetch_group11:
