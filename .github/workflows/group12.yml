@@ -1,14 +1,14 @@
-name: Fetch Group 12 Hockey
+name: Fetch Group 12 hockey
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */11 * * *" # toutes les 6 heures
+    - cron: "0 */10 * * *" # toutes les 10 heures
 
 jobs:
   fetch_group12:
-    name: Run Group 12 Script
-    runs-on: ubuntu-latest
+    name: Run Group 1 Script
+    runs-on: self-hosted  # Self-hosted runner sur ton VPS
 
     steps:
       - name: Checkout repository
@@ -22,13 +22,16 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          npx playwright install --with-deps
+          # Installer les navigateurs Playwright sans apt-get
+          npx playwright install chromium
+          npx playwright install firefox
+          npx playwright install webkit
 
       - name: Run Group 1 Analysis Script
         env:
           VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
-          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
+          
         run: |
-          echo "🚀 Démarrage de l’analyse de hockey..."
+          echo "Demarrage de l'analyse du Groupe 1..."
           node scripts/fetch_group12.js
-          echo "🏁 Fin du script hockey."
+          echo "Fin du script Groupe 12."
