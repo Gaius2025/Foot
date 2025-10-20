@@ -3,7 +3,7 @@ name: Fetch Group 10 basket
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */10 * * *" # toutes les 10 heures
+    - cron: "30 */10 * * *" # toutes les 10 heures
 
 jobs:
   fetch_group10:
