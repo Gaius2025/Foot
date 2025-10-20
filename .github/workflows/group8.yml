@@ -1,4 +1,4 @@
-name: Fetch Group 1 Football
+name: Fetch Group 8 Football
 
 on:
   workflow_dispatch:
