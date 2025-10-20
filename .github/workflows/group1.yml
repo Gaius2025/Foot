@@ -30,8 +30,7 @@ jobs:
       - name: Run Group 1 Analysis Script
         env:
           VPS_WEBHOOK: ${{ secrets.VPS_WEBHOOK }}
-          # Laisse SOFASCORE_COOKIE vide si tu n’as pas de cookies
-          SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE || '' }}
+          
         run: |
           echo "Demarrage de l'analyse du Groupe 1..."
           node scripts/fetch_group1.js
