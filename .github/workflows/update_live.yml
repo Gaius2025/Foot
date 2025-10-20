@@ -1,37 +1,41 @@
-name: ⚡ Update Live Scores (VPS2)
+name: Update Live Scores (VPS2)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"  # toutes les 10 minutes
+    - cron: "0 */2 * * *"  # toutes les 2 heures
 
 jobs:
   update-live:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # Runner VPS
 
     steps:
-      - name: 📦 Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
 
-      - name: 📥 Install dependencies
+      - name: Install dependencies
         run: |
           npm install
           npm install node-fetch@2
-          npx playwright install --with-deps chromium
+          # Installer Playwright et seulement le navigateur nécessaire
+          npx playwright install chromium
 
-      - name: 💾 Cache Playwright browsers
+      - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
 
-      - name: ⚽ Run update_live.js
+      - name: Run update_live.js
         env:
           VPS_WEBHOOK2: ${{ secrets.VPS_WEBHOOK2 }}
           SOFASCORE_COOKIE: ${{ secrets.SOFASCORE_COOKIE }}
-        run: node scripts/update_live.js
+        run: |
+          echo 'Demarrage du script update_live.js'
+          node scripts/update_live.js
+          echo 'Fin du script update_live.js'
