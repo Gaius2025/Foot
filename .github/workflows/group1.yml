@@ -3,12 +3,14 @@ name: Fetch Group 1 Football
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */10 * * *" # toutes les 6 heures
+    - cron: "0 */10 * * *" # toutes les 10 heures
 
 jobs:
   fetch_group1:
     name: Run Group 1 Script
-    runs-on: ubuntu-latest
+    runs-on: self-hosted # <-- utilise ton VPS self-hosted
+    # labels optionnels : Linux, X64 si tu les as configurés
+    # runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout repository
@@ -31,4 +33,4 @@ jobs:
         run: |
           echo "🚀 Démarrage de l’analyse du Groupe 1..."
           node scripts/fetch_group1.js
-          echo "🏁 Fin du script Groupe 1."
+          echo "🏁 Fin du script Groupe 1.”
