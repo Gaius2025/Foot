@@ -1,6 +1,6 @@
 // fetch_championnats_vps.js
 // Script Playwright -> récupère les championnats Sofascore et poste le JSON au VPS
-// Compatible GitHub Actions (Node 18+, Playwright installé)
+// Compatible GitHub Actions (Node  18+, Playwright installé)
 
 const { chromium } = require('playwright');
 
