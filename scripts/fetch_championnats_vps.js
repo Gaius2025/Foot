@@ -1,113 +1,77 @@
-
-// fetch_championnats_vps.js
-// Playwright script -> récupère les championnats Sofascore et poste le JSON au VPS
-// Avec logs complets pour debug
-// Usage via GitHub Actions (node  18+, playwright installé)
-
+// scripts/fetch_metadata_logs.js
+// Récupère les catégories/ligues pour 5 sports et log les IDs clés
 const { chromium } = require('playwright');
 
+const SPORTS_CIBLES = ['football', 'basketball', 'tennis', 'handball', 'rugby'];
+const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
+const COOKIE = process.env.SOFASCORE_COOKIE || '';
+
 (async () => {
-  const SOFA_ENDPOINT = 'https://www.sofascore.com/api/v1/sport/rugby/categories/all';
-  const VPS_WEBHOOK = process.env.VPS_WEBHOOK;
-  const COOKIE = process.env.SOFASCORE_COOKIE || '';
-  const MAX_ATTEMPTS = 2;
+    console.log("🚀 Démarrage de l'extraction des métadonnées...");
 
-  console.log("🚀 Démarrage du script Sofascore...");
-
-  if (!VPS_WEBHOOK) {
-    console.error("❌ Erreur : aucune URL VPS_WEBHOOK trouvée dans les variables d’environnement !");
-    process.exit(2);
-  }
-
-  const ua = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36";
-
-  const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-  try {
-    const context = await browser.newContext({ userAgent: ua });
-    
-    // Ajouter les cookies si nécessaire
-    if (COOKIE.trim()) {
-      const cookiePairs = COOKIE.split(';').map(s => s.trim()).filter(Boolean);
-      const cookies = cookiePairs.map(pair => {
-        const [name, ...rest] = pair.split('=');
-        return { name: name.trim(), value: rest.join('='), domain: 'www.sofascore.com', path: '/', httpOnly: false, secure: true };
-      });
-      if (cookies.length) await context.addCookies(cookies);
+    if (!VPS_WEBHOOK) {
+        console.error("❌ VPS_WEBHOOK manquant !");
+        process.exit(1);
     }
+
+    const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const context = await browser.newContext({
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    });
 
     const page = await context.newPage();
-    let finalData = null;
-    let finalStatus = null;
-    let attemptDetails = [];
+    let globalMetadata = {};
 
-    console.log("🌐 Navigation vers l’API...");
+    for (const sport of SPORTS_CIBLES) {
+        console.log(`\n\n--- 🏆 EXTRACTION : ${sport.toUpperCase()} ---`);
+        const endpoint = `https://www.sofascore.com/api/v1/sport/${sport}/categories/all`;
+        
+        try {
+            const response = await page.goto(endpoint, { waitUntil: 'networkidle', timeout: 30000 });
+            if (response.status() === 200) {
+                const data = await response.json();
+                globalMetadata[sport] = data.categories;
 
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      try {
-        const response = await page.goto(SOFA_ENDPOINT, { waitUntil: 'networkidle', timeout: 20000 });
-        if (response) {
-          const status = response.status();
-          finalStatus = status;
-          attemptDetails.push({ attempt, method: 'goto', status });
-
-          if (status === 200 || status === 304) {
-            try { finalData = await response.json(); } 
-            catch { 
-              const txt = await response.text();
-              try { finalData = JSON.parse(txt); } catch { finalData = { text: txt }; }
+                // --- LOGS POUR COPIER/COLLER ---
+                data.categories.forEach(category => {
+                    // On filtre souvent par pays ou catégories majeures
+                    console.log(`\n🌍 Catégorie: ${category.name} (ID: ${category.id})`);
+                    
+                    if (category.uniqueTournaments) {
+                        category.uniqueTournaments.forEach(league => {
+                            console.log(`   ⚽ Ligue: ${league.name}`);
+                            console.log(`      ID Ligue: ${league.id}`);
+                            // On récupère la saison en cours si elle existe
+                            const currentSeason = league.upperSeasonId || "N/A";
+                            console.log(`      ID Saison Actuelle: ${currentSeason}`);
+                        });
+                    }
+                });
+            } else {
+                console.log(`⚠️ Erreur Status ${response.status()} pour ${sport}`);
             }
-            break;
-          }
+        } catch (err) {
+            console.error(`❌ Erreur sur ${sport}: ${err.message}`);
         }
-      } catch (err) {
-        attemptDetails.push({ attempt, method: 'goto', error: String(err) });
-      }
-      if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000));
     }
 
-    if (!finalData) {
-      console.error("❌ Impossible de récupérer les données après plusieurs tentatives !");
-      process.exit(3);
-    }
-
-    console.log(`📡 Données reçues (${JSON.stringify(finalData).length} caractères)`);
-
-    // Préparer le payload pour le VPS
-    const payloadToSend = {
-      source: 'sofascore_championnats',
-      timestamp: Date.now(),
-      endpoint: SOFA_ENDPOINT,
-      attempts: attemptDetails,
-      status: finalStatus,
-      payload: finalData,
-      filename: `championnats_${Date.now()}.json`  // Nom unique du fichier sur le VPS
-    };
-
-    console.log("💾 Envoi au VPS...");
-    const posted = await sendToVPS(VPS_WEBHOOK, payloadToSend);
-    if (posted.ok) console.log("✅ JSON envoyé avec succès au VPS !");
-    else console.error("⛔ Erreur lors du POST vers VPS:", posted);
-
-  } catch (err) {
-    console.error('Erreur inattendue :', err);
-    process.exit(5);
-  } finally {
-    await browser.close();
-    console.log("🏁 Fin du script.");
-  }
-
-  async function sendToVPS(url, body) {
+    // --- ENVOI AU VPS POUR ARCHIVE ---
+    console.log("\n\n💾 Envoi des métadonnées complètes au VPS...");
     try {
-      const resp = await fetch(url, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify(body) 
-      });
-      const text = await resp.text().catch(() => '');
-      return { ok: resp.ok, status: resp.status, text };
-    } catch (err) {
-      return { ok: false, error: String(err) };
+        const resp = await fetch(VPS_WEBHOOK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                source: 'metadata_extractor',
+                date: new Date().toISOString(),
+                data: globalMetadata
+            })
+        });
+        if (resp.ok) console.log("✅ Backup VPS réussi !");
+    } catch (e) {
+        console.log("⚠️ Echec backup VPS, mais les logs sont dispos ci-dessus.");
     }
-  }
 
+    await browser.close();
+    console.log("\n🏁 Fin du script d'extraction.");
 })();
